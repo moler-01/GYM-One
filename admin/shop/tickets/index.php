@@ -86,19 +86,85 @@ $is_new_version_available = version_compare($latest_version, $current_version) >
 
 if (isset($_POST['add_ticket'])) {
     $name = $_POST['name'];
-    $expire_days = $_POST['expire_days'] === 'unlimited' ? 'NULL' : $_POST['expire_days'];
+    $expire_days = $_POST['expire_days'] === 'unlimited' ? NULL : $_POST['expire_days'];
     $price = $_POST['price'];
-    $occasions = $_POST['occasions'] === '' ? 'NULL' : $_POST['occasions'];
+    $occasions = $_POST['occasions'] === '' ? NULL : $_POST['occasions'];
 
     $sql = "INSERT INTO tickets (name, expire_days, price, occasions) 
-            VALUES ('$name', $expire_days, $price, $occasions)";
-    mysqli_query($conn, $sql);
+            VALUES (?, ?, ?, ?)";
+    $stmt = $conn->prepare($sql);
+    $stmt->bind_param("sidi", $name, $expire_days, $price, $occasions);
+
+    if ($stmt->execute()) {
+        $log_sql = "INSERT INTO logs (userid, action, actioncolor, details, time) VALUES (?, ?, ?, ?, NOW())";
+        $stmt_log = $conn->prepare($log_sql);
+        $action = $translations['success-add'];
+        $color = "success";
+
+        $log_details = [
+            'ticket_name' => $name,
+            'expire_days' => $expire_days ?? 'unlimited',
+            'price' => $price,
+            'occasions' => $occasions ?? 'unlimited'
+        ];
+
+        $details = json_encode($log_details, JSON_UNESCAPED_UNICODE);
+        $stmt_log->bind_param("isss", $userid, $action, $color, $details);
+        $stmt_log->execute();
+        $stmt_log->close();
+
+        $alerts_html .= "<div class='alert alert-success'>{$translations['success-add']}</div>";
+    } else {
+        $alerts_html .= "<div class='alert alert-danger'>{$translations['error-add']}</div>";
+    }
+
+    $stmt->close();
 }
 
 if (isset($_GET['delete'])) {
     $id = $_GET['delete'];
-    $sql = "DELETE FROM tickets WHERE id = $id";
-    mysqli_query($conn, $sql);
+
+    $sql_get = "SELECT name, expire_days, price, occasions FROM tickets WHERE id = ?";
+    $stmt_get = $conn->prepare($sql_get);
+    $stmt_get->bind_param("i", $id);
+    $stmt_get->execute();
+    $result = $stmt_get->get_result();
+
+    if ($result->num_rows > 0) {
+        $ticket_data = $result->fetch_assoc();
+        $sql_delete = "DELETE FROM tickets WHERE id = ?";
+        $stmt_delete = $conn->prepare($sql_delete);
+        $stmt_delete->bind_param("i", $id);
+
+        if ($stmt_delete->execute()) {
+            $log_sql = "INSERT INTO logs (userid, action, actioncolor, details, time) VALUES (?, ?, ?, ?, NOW())";
+            $stmt_log = $conn->prepare($log_sql);
+            $action = $translations['success-delete'];
+            $color = "danger";
+
+            $log_details = [
+                'ticket_id' => $id,
+                'ticket_name' => $ticket_data['name'],
+                'expire_days' => $ticket_data['expire_days'] ?? 'unlimited',
+                'price' => $ticket_data['price'],
+                'occasions' => $ticket_data['occasions'] ?? 'unlimited'
+            ];
+
+            $details = json_encode($log_details, JSON_UNESCAPED_UNICODE);
+            $stmt_log->bind_param("isss", $userid, $action, $color, $details);
+            $stmt_log->execute();
+            $stmt_log->close();
+
+            $alerts_html .= "<div class='alert alert-success'>{$translations['success-delete']}</div>";
+        } else {
+            $alerts_html .= "<div class='alert alert-danger'>{$translations['error-delete']}</div>";
+        }
+
+        $stmt_delete->close();
+    }
+
+    $stmt_get->close();
+    header("Refresh:1");
 }
 
 $sql = "SELECT * FROM tickets";
@@ -137,14 +203,20 @@ $conn->close();
             </div>
             <div class="collapse navbar-collapse" id="myNavbar">
                 <ul class="nav navbar-nav">
-                    <li><a href="../../dashboard"><i class="bi bi-speedometer"></i> <?php echo $translations["mainpage"]; ?></a></li>
-                    <li><a href="../../users"><i class="bi bi-people"></i> <?php echo $translations["users"]; ?></a></li>
-                    <li><a href="../../statistics"><i class="bi bi-bar-chart"></i> <?php echo $translations["statspage"]; ?></a></li>
-                    <li><a href="../../boss/sell"><i class="bi bi-shop"></i> <?php echo $translations["sellpage"]; ?></a></li>
-                    <li><a href="../../invoices"><i class="bi bi-receipt"></i> <?php echo $translations["invoicepage"]; ?></a></li>
+                    <li><a href="../../dashboard"><i class="bi bi-speedometer"></i>
+                            <?php echo $translations["mainpage"]; ?></a></li>
+                    <li><a href="../../users"><i class="bi bi-people"></i> <?php echo $translations["users"]; ?></a>
+                    </li>
+                    <li><a href="../../statistics"><i class="bi bi-bar-chart"></i>
+                            <?php echo $translations["statspage"]; ?></a></li>
+                    <li><a href="../../boss/sell"><i class="bi bi-shop"></i>
+                            <?php echo $translations["sellpage"]; ?></a></li>
+                    <li><a href="../../invoices"><i class="bi bi-receipt"></i>
+                            <?php echo $translations["invoicepage"]; ?></a></li>
                     <?php if ($is_boss === 1) { ?>
                         <li class="dropdown">
-                            <a class="dropdown-toggle" data-toggle="dropdown" href="#"><i class="bi bi-gear"></i> <?php echo $translations["settings"]; ?> <span class="caret"></span></a>
+                            <a class="dropdown-toggle" data-toggle="dropdown" href="#"><i class="bi bi-gear"></i>
+                                <?php echo $translations["settings"]; ?> <span class="caret"></span></a>
                             <ul class="dropdown-menu">
                                 <li><a href="../../boss/mainsettings"><?php echo $translations["businesspage"]; ?></a></li>
                                 <li><a href="../../boss/workers"><?php echo $translations["workers"]; ?></a></li>
@@ -156,17 +228,22 @@ $conn->close();
                             </ul>
                         </li>
                     <?php } ?>
-                    <li class="active"><a href="#"><i class="bi bi-ticket"></i> <?php echo $translations["ticketspage"]; ?></a></li>
-                    <li><a href="../../trainers/timetable"><i class="bi bi-calendar-event"></i> <?php echo $translations["timetable"]; ?></a></li>
-                    <li><a href="../../trainers/personal"><i class="bi bi-award"></i> <?php echo $translations["trainers"]; ?></a></li>
+                    <li class="active"><a href="#"><i class="bi bi-ticket"></i>
+                            <?php echo $translations["ticketspage"]; ?></a></li>
+                    <li><a href="../../trainers/timetable"><i class="bi bi-calendar-event"></i>
+                            <?php echo $translations["timetable"]; ?></a></li>
+                    <li><a href="../../trainers/personal"><i class="bi bi-award"></i>
+                            <?php echo $translations["trainers"]; ?></a></li>
                     <?php if ($is_boss === 1) { ?>
-                        <li><a href="../../updater"><i class="bi bi-cloud-download"></i> <?php echo $translations["updatepage"]; ?>
-                                <?php if ($is_new_version_available) : ?>
+                        <li><a href="../../updater"><i class="bi bi-cloud-download"></i>
+                                <?php echo $translations["updatepage"]; ?>
+                                <?php if ($is_new_version_available): ?>
                                     <span class="badge badge-warning"><i class="bi bi-exclamation-circle"></i></span>
                                 <?php endif; ?>
                             </a></li>
                     <?php } ?>
-                    <li><a href="../../log"><i class="bi bi-clock-history"></i> <?php echo $translations["logpage"]; ?></a></li>
+                    <li><a href="../../log"><i class="bi bi-clock-history"></i>
+                            <?php echo $translations["logpage"]; ?></a></li>
                 </ul>
             </div>
         </div>
@@ -205,7 +282,7 @@ $conn->close();
                     </li>
                     <?php
                     if ($is_boss === 1) {
-                    ?>
+                        ?>
                         <li class="sidebar-header">
                             <?php echo $translations["settings"]; ?>
                         </li>
@@ -251,7 +328,7 @@ $conn->close();
                                 <span><?php echo $translations["rulepage"]; ?></span>
                             </a>
                         </li>
-                    <?php
+                        <?php
                     }
                     ?>
                     <li class="sidebar-header">
@@ -283,19 +360,19 @@ $conn->close();
                     <li class="sidebar-header"><?php echo $translations["other-header"]; ?></li>
                     <?php
                     if ($is_boss === 1) {
-                    ?>
+                        ?>
                         <li class="sidebar-item">
                             <a class="sidebar-ling" href="../../updater">
                                 <i class="bi bi-cloud-download"></i>
                                 <span><?php echo $translations["updatepage"]; ?></span>
-                                <?php if ($is_new_version_available) : ?>
+                                <?php if ($is_new_version_available): ?>
                                     <span class="sidebar-badge badge">
                                         <i class="bi bi-exclamation-circle"></i>
                                     </span>
                                 <?php endif; ?>
                             </a>
                         </li>
-                    <?php
+                        <?php
                     }
                     ?>
                     <li class="sidebar-item">
@@ -327,7 +404,7 @@ $conn->close();
                 </div>
                 <?php
                 if ($is_boss == 1 && $is_new_version_available) {
-                ?>
+                    ?>
                     <div class="row justify-content-center">
                         <div class="col-sm-5">
                             <div class="alert alert-danger">
@@ -335,7 +412,7 @@ $conn->close();
                             </div>
                         </div>
                     </div>
-                <?php
+                    <?php
                 }
                 ?>
                 <div class="row">
@@ -343,7 +420,7 @@ $conn->close();
                         <?php echo $alerts_html; ?>
                         <?php
                         if ($is_boss == 1) {
-                        ?>
+                            ?>
                             <div class="card mb-2">
                                 <div class="card-header">
                                     <h2 class="card-title"><?php echo $translations["ticketsandpassesadd"]; ?></h2>
@@ -353,35 +430,47 @@ $conn->close();
                                         <div class="row">
                                             <div class="col-md-6">
                                                 <div class="form-group">
-                                                    <label for="name" class="form-label"><?php echo $translations["ticketspassname"]; ?></label>
+                                                    <label for="name"
+                                                        class="form-label"><?php echo $translations["ticketspassname"]; ?></label>
                                                     <input type="text" class="form-control" id="name" name="name" required>
                                                 </div>
                                             </div>
                                             <div class="col-md-6">
                                                 <div class="form-group">
-                                                    <label for="expire_days" class="form-label"><?php echo $translations["tickettableexpiry"]; ?></label>
-                                                    <input type="text" class="form-control" id="expire_days" name="expire_days" placeholder="<?php echo $translations["expiredatetext"]; ?>">
+                                                    <label for="expire_days"
+                                                        class="form-label"><?php echo $translations["tickettableexpiry"]; ?></label>
+                                                    <input type="text" class="form-control" id="expire_days"
+                                                        name="expire_days"
+                                                        placeholder="<?php echo $translations["expiredatetext"]; ?>">
                                                 </div>
                                             </div>
                                             <div class="col-md-6">
                                                 <div class="form-group">
-                                                    <label for="price" class="form-label"><?php echo $translations["price"]; ?> (<?php echo $currency_env; ?>)</label>
-                                                    <input type="number" class="form-control" id="price" name="price" required>
+                                                    <label for="price"
+                                                        class="form-label"><?php echo $translations["price"]; ?>
+                                                        (<?php echo $currency_env; ?>)</label>
+                                                    <input type="number" class="form-control" id="price" name="price"
+                                                        required>
                                                 </div>
                                             </div>
                                             <div class="col-md-6">
                                                 <div class="form-group">
-                                                    <label for="occasions" class="form-label"><?php echo $translations["tickettableoccassion"]; ?></label>
-                                                    <input type="number" class="form-control" id="occasions" name="occasions" placeholder="<?php echo $translations["onlyfordaily"]; ?>">
+                                                    <label for="occasions"
+                                                        class="form-label"><?php echo $translations["tickettableoccassion"]; ?></label>
+                                                    <input type="number" class="form-control" id="occasions"
+                                                        name="occasions"
+                                                        placeholder="<?php echo $translations["onlyfordaily"]; ?>">
                                                 </div>
                                             </div>
                                         </div>
-                                        <button type="submit" class="btn btn-primary mt-3" name="add_ticket"><i class="bi bi-plus-circle"></i> <?php echo $translations["ticketsandpassesadd"]; ?></button>
+                                        <button type="submit" class="btn btn-primary mt-3" name="add_ticket"><i
+                                                class="bi bi-plus-circle"></i>
+                                            <?php echo $translations["ticketsandpassesadd"]; ?></button>
                                     </form>
 
                                 </div>
                             </div>
-                        <?php
+                            <?php
                         } else {
                             echo $translations["dont-access"];
                         }
@@ -393,7 +482,7 @@ $conn->close();
                         <?php echo $alerts_html; ?>
                         <?php
                         if ($is_boss == 1) {
-                        ?>
+                            ?>
                             <div class="card">
                                 <div class="card-header">
                                     <h2 class="card-title"><?php echo $translations["ticketsandpasseslist"]; ?></h2>
@@ -406,7 +495,8 @@ $conn->close();
                                                     <th>ID</th>
                                                     <th><?php echo $translations["tickettablename"]; ?></th>
                                                     <th><?php echo $translations["tickettableexpiry"]; ?></th>
-                                                    <th><?php echo $translations["price"]; ?> (<?php echo $currency_env; ?>)</th>
+                                                    <th><?php echo $translations["price"]; ?> (<?php echo $currency_env; ?>)
+                                                    </th>
                                                     <th><?php echo $translations["tickettableoccassion"]; ?></th>
                                                     <th><?php echo $translations["interact"]; ?></th>
                                                 </tr>
@@ -416,11 +506,14 @@ $conn->close();
                                                     <tr>
                                                         <td><?= $row['id'] ?></td>
                                                         <td><?= $row['name'] ?></td>
-                                                        <td><?= is_null($row['expire_days']) ? $translations["unlimited"] : $row['expire_days'] ?></td>
+                                                        <td><?= is_null($row['expire_days']) ? $translations["unlimited"] : $row['expire_days'] ?>
+                                                        </td>
                                                         <td><?= $row['price'] ?></td>
                                                         <td><?= is_null($row['occasions']) ? '-' : $row['occasions'] ?></td>
                                                         <td>
-                                                            <a href="?delete=<?= $row['id'] ?>" class="btn btn-danger btn-sm"><i class="bi bi-x-circle"></i> <?php echo $translations["delete"]; ?></a>
+                                                            <a href="?delete=<?= $row['id'] ?>" class="btn btn-danger btn-sm"><i
+                                                                    class="bi bi-x-circle"></i>
+                                                                <?php echo $translations["delete"]; ?></a>
                                                         </td>
                                                     </tr>
                                                 <?php endwhile; ?>
@@ -429,7 +522,7 @@ $conn->close();
                                     </div>
                                 </div>
                             </div>
-                        <?php
+                            <?php
                         } else {
                             echo $translations["dont-access"];
                         }
@@ -440,18 +533,37 @@ $conn->close();
         </div>
 
         <!-- EXIT MODAL -->
-        <div class="modal fade" id="logoutModal" tabindex="-1" role="dialog" aria-labelledby="logoutModalLabel"
-            aria-hidden="true">
-            <div class="modal-dialog" role="document">
-                <div class="modal-content">
-                    <div class="modal-body">
-                        <p><?php echo $translations["exit-modal"]; ?></p>
-                    </div>
-                    <div class="modal-footer">
-                        <a type="button" class="btn btn-secondary"
-                            data-dismiss="modal"><?php echo $translations["not-yet"]; ?></a>
-                        <a href="../../logout.php" type="button"
-                            class="btn btn-danger"><?php echo $translations["confirm"]; ?></a>
+        <div class="modal fade" id="logoutModal" tabindex="-1" role="dialog">
+            <div class="modal-dialog" style="margin-top: 100px;">
+                <div class="modal-content" style="border: none; box-shadow: 0 0 40px rgba(0,0,0,.2);">
+                    <div class="modal-body text-center" style="padding: 40px;">
+
+                        <div style="margin-bottom: 25px;">
+                            <div style="width: 80px; height: 80px; margin: 0 auto;
+                                background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+                                border-radius: 50%;
+                                display: flex; align-items: center; justify-content: center;">
+                                <i class="bi bi-box-arrow-right" style="color: #fff; font-size: 40px;"></i>
+                            </div>
+                        </div>
+
+                        <h4 style="font-weight: bold; margin-bottom: 15px;">
+                            <p><?php echo $translations["exit-modal"]; ?></p>
+                        </h4>
+
+                        <div class="text-center">
+                            <a type="button" class="btn btn-default" data-dismiss="modal"
+                                style="padding: 8px 25px; margin-right: 10px;">
+                                <i class="bi bi-x-circle" style="margin-right: 5px;"></i>
+                                <?php echo $translations["not-yet"]; ?>
+                            </a>
+
+                            <a href="../../logout.php" type="button" class="btn btn-danger" style="padding: 8px 25px;">
+                                <i class="bi bi-check-circle" style="margin-right: 5px;"></i>
+                                <?php echo $translations["confirm"]; ?>
+                            </a>
+                        </div>
+
                     </div>
                 </div>
             </div>

@@ -75,9 +75,110 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $row = $result->fetch_assoc();
             if (password_verify($password, $row['password_hash'])) {
                 $_SESSION['adminuser'] = $row['userid'];
+
+                $ip_address = $_SERVER['REMOTE_ADDR'];
+                if (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+                    $ip_address = $_SERVER['HTTP_X_FORWARDED_FOR'];
+                } elseif (!empty($_SERVER['HTTP_CLIENT_IP'])) {
+                    $ip_address = $_SERVER['HTTP_CLIENT_IP'];
+                }
+
+                $user_agent = $_SERVER['HTTP_USER_AGENT'] ?? $translations["unknown"];
+
+                $browser = $translations["unknown"];
+                if (strpos($user_agent, 'Chrome') !== false)
+                    $browser = 'Chrome';
+                elseif (strpos($user_agent, 'Firefox') !== false)
+                    $browser = 'Firefox';
+                elseif (strpos($user_agent, 'Safari') !== false)
+                    $browser = 'Safari';
+                elseif (strpos($user_agent, 'Edge') !== false)
+                    $browser = 'Edge';
+                elseif (strpos($user_agent, 'Opera') !== false)
+                    $browser = 'Opera';
+
+                $os = $translations["unknown"];
+                if (strpos($user_agent, 'Windows') !== false)
+                    $os = 'Windows';
+                elseif (strpos($user_agent, 'Mac') !== false)
+                    $os = 'macOS';
+                elseif (strpos($user_agent, 'Linux') !== false)
+                    $os = 'Linux';
+                elseif (strpos($user_agent, 'Android') !== false)
+                    $os = 'Android';
+                elseif (strpos($user_agent, 'iOS') !== false)
+                    $os = 'iOS';
+
+                $device = $browser . ', ' . $os;
+
+                $location = $translations["unknown"];
+
+                $geo = @file_get_contents("http://ip-api.com/json/" . $ip_address . "?fields=country,city,regionName,query,status");
+                if ($geo !== false) {
+                    $geo = json_decode($geo, true);
+                    if ($geo && $geo['status'] === 'success') {
+                        $location = $geo['country'] . ', ' . $geo['regionName'] . ', ' . $geo['city'];
+                    }
+                }
+
+                $log_details = json_encode([
+                    'ip_address' => $ip_address,
+                    'device' => $device,
+                    'location' => $location,
+                    'login_time' => date('Y-m-d H:i:s')
+                ], JSON_UNESCAPED_UNICODE);
+
+                $log_action = $translations["log_admin_successful_login"];
+                $log_color = 'success';
+
+                $log_userid = $_SESSION['adminuser'];
+
+                $log_sql = "INSERT INTO logs (userid, action, actioncolor, details, time) 
+            VALUES (?, ?, ?, ?, NOW())";
+                $log_stmt = $conn->prepare($log_sql);
+                $log_stmt->bind_param("isss", $log_userid, $log_action, $log_color, $log_details);
+                $log_stmt->execute();
+                $log_stmt->close();
                 header("Location: dashboard/");
                 exit();
             } else {
+                $ip_address = $_SERVER['REMOTE_ADDR'];
+                if (!empty($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+                    $ip_address = $_SERVER['HTTP_X_FORWARDED_FOR'];
+                } elseif (!empty($_SERVER['HTTP_CLIENT_IP'])) {
+                    $ip_address = $_SERVER['HTTP_CLIENT_IP'];
+                }
+
+                $location = $translations["unknown"];
+
+                $geo = @file_get_contents("http://ip-api.com/json/" . $ip_address . "?fields=country,city,regionName,query,status");
+                if ($geo !== false) {
+                    $geo = json_decode($geo, true);
+                    if ($geo && $geo['status'] === 'success') {
+                        $location = $geo['country'] . ', ' . $geo['regionName'] . ', ' . $geo['city'];
+                    }
+                }
+
+                $attempted_username = $_POST['username'] ?? $translations["unknown"];
+
+                $log_details = json_encode([
+                    'ip_address' => $ip_address,
+                    'location' => $location,
+                    'attempted_username' => $attempted_username,
+                    'status' => $translations["log_admin_unsuccessful_login"]
+                ], JSON_UNESCAPED_UNICODE);
+
+                $log_action = $translations["log_admin_unsuccessful_login"];
+                $log_color = 'danger';
+                $log_userid = null;
+
+                $log_sql = "INSERT INTO logs (userid, action, actioncolor, details, time) 
+VALUES (?, ?, ?, ?, NOW())";
+                $log_stmt = $conn->prepare($log_sql);
+                $log_stmt->bind_param("isss", $log_userid, $log_action, $log_color, $log_details);
+                $log_stmt->execute();
+                $log_stmt->close();
+
                 $alerts_html .= '<div class="alert alert-danger" role="alert">
                                     <i class="fas fa-exclamation-circle"></i> ' . $translations["incorrect-pass"] . '
                                 </div>';
@@ -151,7 +252,7 @@ $conn->close();
             position: absolute;
             width: 500px;
             height: 500px;
-            background: radial-gradient(circle, rgba(255,107,107,0.15) 0%, transparent 70%);
+            background: radial-gradient(circle, rgba(255, 107, 107, 0.15) 0%, transparent 70%);
             border-radius: 50%;
             top: -100px;
             right: -100px;
@@ -163,7 +264,7 @@ $conn->close();
             position: absolute;
             width: 400px;
             height: 400px;
-            background: radial-gradient(circle, rgba(78,205,196,0.1) 0%, transparent 70%);
+            background: radial-gradient(circle, rgba(78, 205, 196, 0.1) 0%, transparent 70%);
             border-radius: 50%;
             bottom: -50px;
             left: -50px;
@@ -171,10 +272,13 @@ $conn->close();
         }
 
         @keyframes pulse {
-            0%, 100% {
+
+            0%,
+            100% {
                 transform: scale(1);
                 opacity: 0.5;
             }
+
             50% {
                 transform: scale(1.1);
                 opacity: 0.8;
@@ -260,6 +364,7 @@ $conn->close();
                 opacity: 0;
                 transform: translateY(30px);
             }
+
             to {
                 opacity: 1;
                 transform: translateY(0);
@@ -285,6 +390,7 @@ $conn->close();
             from {
                 opacity: 0;
             }
+
             to {
                 opacity: 1;
             }
@@ -420,6 +526,7 @@ $conn->close();
                 opacity: 0;
                 transform: translateY(-15px);
             }
+
             to {
                 opacity: 1;
                 transform: translateY(0);
@@ -492,25 +599,25 @@ $conn->close();
             <div class="brand-content">
                 <img src="../assets/img/logo.png" alt="GYM One Logo" class="brand-logo">
                 <p class="brand-description">
-                    <?php echo $translations["herotext"];?>
+                    <?php echo $translations["herotext"]; ?>
                 </p>
 
                 <div class="feature-grid">
                     <div class="feature-item">
                         <i class="fas fa-users"></i>
-                        <h4><?php echo $translations["loginusermanagger"];?></h4>
+                        <h4><?php echo $translations["loginusermanagger"]; ?></h4>
                     </div>
                     <div class="feature-item">
                         <i class="fas fa-chart-line"></i>
-                        <h4><?php echo $translations["statspage"];?></h4>
+                        <h4><?php echo $translations["statspage"]; ?></h4>
                     </div>
                     <div class="feature-item">
                         <i class="fas fa-calendar-check"></i>
-                        <h4><?php echo $translations["loginuserpassmanagger"];?></h4>
+                        <h4><?php echo $translations["loginuserpassmanagger"]; ?></h4>
                     </div>
                     <div class="feature-item">
                         <i class="fas fa-shield-alt"></i>
-                        <h4><?php echo $translations["loginusersecured"];?></h4>
+                        <h4><?php echo $translations["loginusersecured"]; ?></h4>
                     </div>
                 </div>
             </div>
@@ -520,23 +627,24 @@ $conn->close();
             <div class="login-container">
                 <div class="admin-badge">
                     <i class="fas fa-shield-alt"></i>
-                    <?php echo $translations["adminlogin"];?>
+                    <?php echo $translations["adminlogin"]; ?>
                 </div>
 
                 <div class="login-header">
-                    <h1><?php echo $translations["welcome"];?></h1>
-                    <p><?php echo $loginlikeadmin_PLACEHOLDER;?></p>
+                    <h1><?php echo $translations["welcome"]; ?></h1>
+                    <p><?php echo $loginlikeadmin_PLACEHOLDER; ?></p>
                 </div>
 
-                <?php if (!empty($alerts_html)) echo $alerts_html; ?>
+                <?php if (!empty($alerts_html))
+                    echo $alerts_html; ?>
 
                 <form method="post" action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>">
                     <div class="form-group">
                         <label class="form-label" for="username"><?php echo $translations["username"]; ?></label>
                         <div class="input-group">
                             <i class="fas fa-user input-icon"></i>
-                            <input type="text" class="form-control" id="username" name="username" 
-                                   placeholder="<?php echo $translations["username_placeholder"];?>" required autofocus>
+                            <input type="text" class="form-control" id="username" name="username"
+                                placeholder="<?php echo $translations["username_placeholder"]; ?>" required autofocus>
                         </div>
                     </div>
 
@@ -544,8 +652,8 @@ $conn->close();
                         <label class="form-label" for="password"><?php echo $translations["password"]; ?></label>
                         <div class="input-group">
                             <i class="fas fa-lock input-icon"></i>
-                            <input type="password" class="form-control" id="password" name="password" 
-                                   placeholder="<?php echo $translations["password_placeholder"];?>" required>
+                            <input type="password" class="form-control" id="password" name="password"
+                                placeholder="<?php echo $translations["password_placeholder"]; ?>" required>
                         </div>
                     </div>
 
@@ -557,9 +665,9 @@ $conn->close();
                 <div class="security-note">
                     <h5>
                         <i class="fas fa-info-circle"></i>
-                        <?php echo $translations["secure_adminlogin_desc"];?>
+                        <?php echo $translations["secure_adminlogin_desc"]; ?>
                     </h5>
-                    <p><?php echo $translations["secure_adminlogin_desc_1"];?></p>
+                    <p><?php echo $translations["secure_adminlogin_desc_1"]; ?></p>
                 </div>
             </div>
         </div>

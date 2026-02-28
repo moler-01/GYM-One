@@ -1,6 +1,21 @@
 <?php
 require_once '../vendor/autoload.php'; 
 
+// GYM ONE - HEARTBEAT API CALL
+$wait = rand(1,10);
+sleep($wait);
+
+echo file_get_contents('https://api.gymoneglobal.com/POST/HeartBeat', false, stream_context_create([
+    'http'=>[
+        'method'=>'POST',
+        'header'=>"Content-Type: application/json\r\n",
+        'content'=>json_encode(['timestamp'=>date('c')])
+    ]
+]));
+
+// GYM ONE - HEARTBEAT API HANGUP
+
+
 function read_env_file($file_path)
 {
     $env_file = file_get_contents($file_path);

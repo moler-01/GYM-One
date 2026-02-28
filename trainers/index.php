@@ -65,15 +65,48 @@ $dayNames = [
     7 => $translations["Sun"]
 ];
 
-$sql = "SELECT * FROM opening_hours ORDER BY day ASC";
-$result = $conn->query($sql);
-
 $days = [];
-if ($result->num_rows > 0) {
-    while ($row = $result->fetch_assoc()) {
-        $days[] = $row;
-    }
+$result = $conn->query("SELECT * FROM opening_hours ORDER BY day ASC");
+while ($row = $result->fetch_assoc()) {
+    $days[] = $row;
 }
+
+$today = new DateTime('today');
+$maxDate = (new DateTime('today'))->modify('+14 days');
+
+$todayStr = $today->format('Y-m-d');
+$maxDateStr = $maxDate->format('Y-m-d');
+
+$exceptions = [];
+$stmt = $conn->prepare("
+    SELECT * 
+    FROM opening_hours_exceptions 
+    WHERE date BETWEEN ? AND ?
+    ORDER BY date ASC
+");
+$stmt->bind_param("ss", $todayStr, $maxDateStr);
+$stmt->execute();
+
+$res = $stmt->get_result();
+while ($row = $res->fetch_assoc()) {
+    $exceptions[] = $row;
+}
+$stmt->close();
+
+$months = [
+    1 => $translations["Jan"],
+    2 => $translations["Feb"],
+    3 => $translations["Mar"],
+    4 => $translations["Apr"],
+    5 => $translations["May"],
+    6 => $translations["Jun"],
+    7 => $translations["Jul"],
+    8 => $translations["Aug"],
+    9 => $translations["Sep"],
+    10 => $translations["Oct"],
+    11 => $translations["Nov"],
+    12 => $translations["Dec"],
+];
 
 $sql = "SELECT * FROM trainers";
 $result = $conn->query($sql);
@@ -90,7 +123,8 @@ $result = $conn->query($sql);
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo $business_name; ?> - <?php echo $translations["trainerspage"]; ?></title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <!-- CUSTOM STYLE INSERT HERE! -->
     <link rel="stylesheet" href="../assets/css/default.css">
@@ -121,7 +155,9 @@ $result = $conn->query($sql);
     <div class="container">
         <nav class="navbar navbar-expand-lg navbar-light">
             <img class="img" src="../assets/img/brand/logo.png" width="148px" alt="<?php echo $business_name; ?> Logo">
-            <button class="navbar-toggler custom-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <button class="navbar-toggler custom-toggler" type="button" data-bs-toggle="collapse"
+                data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false"
+                aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
@@ -158,13 +194,18 @@ $result = $conn->query($sql);
             <?php while ($row = $result->fetch_assoc()): ?>
                 <div class="row mt-2 text-center justify-content-center">
                     <div class="col-sm-4 text-center">
-                        <img src="<?php echo '../assets/img/trainers/trainer_' . $row['id'] . '.png'; ?>" alt="<?php echo $row['name']; ?>" width="300px" class="img img-fluid rounded-pill">
+                        <img src="<?php echo '../assets/img/trainers/trainer_' . $row['id'] . '.png'; ?>"
+                            alt="<?php echo $row['name']; ?>" width="300px" class="img img-fluid rounded-pill">
                         <h1 class="mt-3"><?php echo $row['name']; ?></h1>
                     </div>
                     <div class="col-sm-4">
                         <p><?php echo nl2br($row['description']); ?></p>
-                        <p><strong><?php echo $translations["price"]; ?> (1 <?php echo $translations["hour"]; ?>):</strong> <?php echo $row['price_1hour']; ?> <?php echo $currency; ?></p>
-                        <p><strong><?php echo $translations["price"]; ?> (10 <?php echo $translations["occasions"]; ?>):</strong> <?php echo $row['price_10sessions']; ?> <?php echo $currency; ?></p>
+                        <p><strong><?php echo $translations["price"]; ?> (1 <?php echo $translations["hour"]; ?>):</strong>
+                            <?php echo $row['price_1hour']; ?>         <?php echo $currency; ?></p>
+                        <p><strong><?php echo $translations["price"]; ?> (10
+                                <?php echo $translations["occasions"]; ?>):</strong> <?php echo $row['price_10sessions']; ?>
+                            <?php echo $currency; ?>
+                        </p>
                     </div>
                 </div>
             <?php endwhile; ?>
@@ -177,7 +218,8 @@ $result = $conn->query($sql);
                     <div class="mt-3"></div>
                     <div class="col-md-4 mb-1">
                         <h2 class="mb-4">
-                            <img src="../assets/img/brand/logo.png" alt="<?php echo $business_name; ?> - Logo" height="105">
+                            <img src="../assets/img/brand/logo.png" alt="<?php echo $business_name; ?> - Logo"
+                                height="105">
                         </h2>
 
                         <p><?php echo $city; ?></p>
@@ -194,7 +236,30 @@ $result = $conn->query($sql);
                                                 <span class="badge bg-danger"><?= $translations["closed"]; ?></span>
                                             <?php else: ?>
                                                 <span class="badge bg-success">
-                                                    <?= date('H:i', strtotime($day['open_time'])) ?> - <?= date('H:i', strtotime($day['close_time'])) ?>
+                                                    <?= date('H:i', strtotime($day['open_time'])) ?> -
+                                                    <?= date('H:i', strtotime($day['close_time'])) ?>
+                                                </span>
+                                            <?php endif; ?>
+                                        </span>
+                                    </div>
+                                <?php endforeach; ?>
+                                <hr>
+                                <?php foreach ($exceptions as $ex): ?>
+                                    <?php
+                                    $date = new DateTime($ex['date']);
+                                    $monthName = $months[(int) $date->format('n')];
+                                    $day = $date->format('j');
+                                    ?>
+                                    <div class="list-group-itemcustom d-flex justify-content-between align-items-center">
+                                        <span><strong><?= $monthName . ' ' . $day . '.' ?></strong></span>
+
+                                        <span class="text-center justify-content-center">
+                                            <?php if ($ex['is_closed']): ?>
+                                                <span class="badge bg-danger"><?= $translations["closed"]; ?></span>
+                                            <?php else: ?>
+                                                <span class="badge bg-warning text-dark">
+                                                    <?= date('H:i', strtotime($ex['open_time'])) ?> -
+                                                    <?= date('H:i', strtotime($ex['close_time'])) ?>
                                                 </span>
                                             <?php endif; ?>
                                         </span>
@@ -212,9 +277,12 @@ $result = $conn->query($sql);
 
                 <div class="border-top border-secondary pt-3 mt-3">
                     <p class="small text-center mb-0">
-                        Copyright © <?php echo $copyright_year; ?> <?php echo $business_name; ?> - <?php echo $translations["copyright"]; ?>
-                        &nbsp;<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="red" class="bi bi-heart-fill" viewBox="0 0 16 16">
-                            <path fill-rule="evenodd" d="M8 1.314C12.438-3.248 23.534 4.735 8 15-7.534 4.736 3.562-3.248 8 1.314">
+                        Copyright © <?php echo $copyright_year; ?> <?php echo $business_name; ?> -
+                        <?php echo $translations["copyright"]; ?>
+                        &nbsp;<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="red"
+                            class="bi bi-heart-fill" viewBox="0 0 16 16">
+                            <path fill-rule="evenodd"
+                                d="M8 1.314C12.438-3.248 23.534 4.735 8 15-7.534 4.736 3.562-3.248 8 1.314">
                             </path>
                         </svg>
                         <a href="https://www.gymoneglobal.com/?lang=<?php echo $lang_code; ?>">GYM One</a>
@@ -224,6 +292,8 @@ $result = $conn->query($sql);
         </div>
 </body>
 <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+    integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+    crossorigin="anonymous"></script>
 
 </html>

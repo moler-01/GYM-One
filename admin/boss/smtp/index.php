@@ -176,14 +176,20 @@ $conn->close();
             </div>
             <div class="collapse navbar-collapse" id="myNavbar">
                 <ul class="nav navbar-nav">
-                    <li><a href="../../dashboard"><i class="bi bi-speedometer"></i> <?php echo $translations["mainpage"]; ?></a></li>
-                    <li><a href="../../users"><i class="bi bi-people"></i> <?php echo $translations["users"]; ?></a></li>
-                    <li><a href="../../statistics"><i class="bi bi-bar-chart"></i> <?php echo $translations["statspage"]; ?></a></li>
-                    <li><a href="../../boss/sell"><i class="bi bi-shop"></i> <?php echo $translations["sellpage"]; ?></a></li>
-                    <li><a href="../../invoices"><i class="bi bi-receipt"></i> <?php echo $translations["invoicepage"]; ?></a></li>
+                    <li><a href="../../dashboard"><i class="bi bi-speedometer"></i>
+                            <?php echo $translations["mainpage"]; ?></a></li>
+                    <li><a href="../../users"><i class="bi bi-people"></i> <?php echo $translations["users"]; ?></a>
+                    </li>
+                    <li><a href="../../statistics"><i class="bi bi-bar-chart"></i>
+                            <?php echo $translations["statspage"]; ?></a></li>
+                    <li><a href="../../boss/sell"><i class="bi bi-shop"></i>
+                            <?php echo $translations["sellpage"]; ?></a></li>
+                    <li><a href="../../invoices"><i class="bi bi-receipt"></i>
+                            <?php echo $translations["invoicepage"]; ?></a></li>
                     <?php if ($is_boss === 1) { ?>
                         <li class="dropdown active">
-                            <a class="dropdown-toggle" data-toggle="dropdown" href="#"><i class="bi bi-gear"></i> <?php echo $translations["settings"]; ?> <span class="caret"></span></a>
+                            <a class="dropdown-toggle" data-toggle="dropdown" href="#"><i class="bi bi-gear"></i>
+                                <?php echo $translations["settings"]; ?> <span class="caret"></span></a>
                             <ul class="dropdown-menu">
                                 <li><a href="../../boss/mainsettings"><?php echo $translations["businesspage"]; ?></a></li>
                                 <li><a href="../../boss/workers"><?php echo $translations["workers"]; ?></a></li>
@@ -195,17 +201,22 @@ $conn->close();
                             </ul>
                         </li>
                     <?php } ?>
-                    <li><a href="../../shop/tickets"><i class="bi bi-ticket"></i> <?php echo $translations["ticketspage"]; ?></a></li>
-                    <li><a href="../../trainers/timetable"><i class="bi bi-calendar-event"></i> <?php echo $translations["timetable"]; ?></a></li>
-                    <li><a href="../../trainers/personal"><i class="bi bi-award"></i> <?php echo $translations["trainers"]; ?></a></li>
+                    <li><a href="../../shop/tickets"><i class="bi bi-ticket"></i>
+                            <?php echo $translations["ticketspage"]; ?></a></li>
+                    <li><a href="../../trainers/timetable"><i class="bi bi-calendar-event"></i>
+                            <?php echo $translations["timetable"]; ?></a></li>
+                    <li><a href="../../trainers/personal"><i class="bi bi-award"></i>
+                            <?php echo $translations["trainers"]; ?></a></li>
                     <?php if ($is_boss === 1) { ?>
-                        <li><a href="../../updater"><i class="bi bi-cloud-download"></i> <?php echo $translations["updatepage"]; ?>
-                                <?php if ($is_new_version_available) : ?>
+                        <li><a href="../../updater"><i class="bi bi-cloud-download"></i>
+                                <?php echo $translations["updatepage"]; ?>
+                                <?php if ($is_new_version_available): ?>
                                     <span class="badge badge-warning"><i class="bi bi-exclamation-circle"></i></span>
                                 <?php endif; ?>
                             </a></li>
                     <?php } ?>
-                    <li><a href="../../log"><i class="bi bi-clock-history"></i> <?php echo $translations["logpage"]; ?></a></li>
+                    <li><a href="../../log"><i class="bi bi-clock-history"></i>
+                            <?php echo $translations["logpage"]; ?></a></li>
                 </ul>
             </div>
         </div>
@@ -244,7 +255,7 @@ $conn->close();
                     </li>
                     <?php
                     if ($is_boss === 1) {
-                    ?>
+                        ?>
                         <li class="sidebar-header">
                             <?php echo $translations["settings"]; ?>
                         </li>
@@ -290,7 +301,7 @@ $conn->close();
                                 <span><?php echo $translations["rulepage"]; ?></span>
                             </a>
                         </li>
-                    <?php
+                        <?php
                     }
                     ?>
                     <li class="sidebar-header">
@@ -321,19 +332,19 @@ $conn->close();
                     <li class="sidebar-header"><?php echo $translations["other-header"]; ?></li>
                     <?php
                     if ($is_boss === 1) {
-                    ?>
+                        ?>
                         <li class="sidebar-item">
                             <a class="sidebar-ling" href="../../updater">
                                 <i class="bi bi-cloud-download"></i>
                                 <span><?php echo $translations["updatepage"]; ?></span>
-                                <?php if ($is_new_version_available) : ?>
+                                <?php if ($is_new_version_available): ?>
                                     <span class="sidebar-badge badge">
                                         <i class="bi bi-exclamation-circle"></i>
                                     </span>
                                 <?php endif; ?>
                             </a>
                         </li>
-                    <?php
+                        <?php
                     }
                     ?>
                     <li class="sidebar-item">
@@ -372,7 +383,7 @@ $conn->close();
 
                                 <?php
                                 if ($is_boss == 1) {
-                                ?>
+                                    ?>
                                     <form method="POST">
                                         <div class="form-row">
                                             <div class="form-group col-md-6">
@@ -411,24 +422,27 @@ $conn->close();
                                                     value="<?= htmlspecialchars($env_data['MAIL_PASSWORD'] ?? '') ?>">
                                             </div>
                                             <div class="form-group col-md-3">
-                                                <label for="autoaccept"><?php echo $translations["autoacceptbuttonform"];?></label>
+                                                <label
+                                                    for="autoaccept"><?php echo $translations["autoacceptbuttonform"]; ?></label>
                                                 <div class="custom-control custom-switch">
                                                     <input type="hidden" name="autoaccept" value="FALSE">
-                                                    <input type="checkbox" class="custom-control-input" id="autoaccept" name="autoaccept" value="TRUE"
+                                                    <input type="checkbox" class="custom-control-input" id="autoaccept"
+                                                        name="autoaccept" value="TRUE"
                                                         <?= (htmlspecialchars($env_data['AUTOACCEPT'] ?? '') === 'TRUE') ? 'checked' : '' ?>>
-                                                    <label class="custom-control-label" for="autoaccept"><?php echo $translations["onswitch"];?></label>
+                                                    <label class="custom-control-label"
+                                                        for="autoaccept"><?php echo $translations["onswitch"]; ?></label>
                                                 </div>
                                             </div>
 
                                         </div>
-                                        <button type="submit"
-                                            class="btn btn-primary"><i class="bi bi-save"></i> <?php echo $translations["save"]; ?></button>
+                                        <button type="submit" class="btn btn-primary"><i class="bi bi-save"></i>
+                                            <?php echo $translations["save"]; ?></button>
                                         <button type="button" class="btn btn-success" data-toggle="modal"
                                             data-target="#emailModal">
                                             <i class="bi bi-envelope"></i> <?php echo $translations["mailtest"]; ?>
                                         </button>
                                     </form>
-                                <?php
+                                    <?php
                                 } else {
                                     echo $translations["dont-access"];
                                 }
@@ -442,18 +456,36 @@ $conn->close();
         </div>
     </div>
 
-    <div class="modal fade" id="logoutModal" tabindex="-1" role="dialog" aria-labelledby="logoutModalLabel"
-        aria-hidden="true">
-        <div class="modal-dialog" role="document">
-            <div class="modal-content">
-                <div class="modal-body">
-                    <p><?php echo $translations["exit-modal"]; ?></p>
-                </div>
-                <div class="modal-footer">
-                    <a type="button" class="btn btn-secondary"
-                        data-dismiss="modal"><?php echo $translations["not-yet"]; ?></a>
-                    <a href="../../logout.php" type="button"
-                        class="btn btn-danger"><?php echo $translations["confirm"]; ?></a>
+    <div class="modal fade" id="logoutModal" tabindex="-1" role="dialog">
+        <div class="modal-dialog" style="margin-top: 100px;">
+            <div class="modal-content" style="border: none; box-shadow: 0 0 40px rgba(0,0,0,.2);">
+                <div class="modal-body text-center" style="padding: 40px;">
+
+                    <div style="margin-bottom: 25px;">
+                        <div style="width: 80px; height: 80px; margin: 0 auto;
+                                background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+                                border-radius: 50%;
+                                display: flex; align-items: center; justify-content: center;">
+                            <i class="bi bi-box-arrow-right" style="color: #fff; font-size: 40px;"></i>
+                        </div>
+                    </div>
+
+                    <h4 style="font-weight: bold; margin-bottom: 15px;">
+                        <p><?php echo $translations["exit-modal"]; ?></p>
+                    </h4>
+
+                    <div class="text-center">
+                        <a type="button" class="btn btn-default" data-dismiss="modal"
+                            style="padding: 8px 25px; margin-right: 10px;">
+                            <i class="bi bi-x-circle" style="margin-right: 5px;"></i>
+                            <?php echo $translations["not-yet"]; ?>
+                        </a>
+
+                        <a href="../../logout.php" type="button" class="btn btn-danger" style="padding: 8px 25px;">
+                            <i class="bi bi-check-circle" style="margin-right: 5px;"></i>
+                            <?php echo $translations["confirm"]; ?>
+                        </a>
+                    </div>
                 </div>
             </div>
         </div>
@@ -476,9 +508,10 @@ $conn->close();
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary"
-                            data-dismiss="modal"><i class="bi bi-box-arrow-left"></i> <?php echo $translations["close"]; ?></button>
-                        <button type="submit" class="btn btn-primary"><i class="bi bi-reply-all"></i> <?php echo $translations["send"]; ?></button>
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal"><i
+                                class="bi bi-box-arrow-left"></i> <?php echo $translations["close"]; ?></button>
+                        <button type="submit" class="btn btn-primary"><i class="bi bi-reply-all"></i>
+                            <?php echo $translations["send"]; ?></button>
                     </div>
                 </form>
             </div>

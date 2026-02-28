@@ -935,7 +935,7 @@ if (!function_exists('curl_init')) {
                         $("#log-container").html(response.log);
                         $("#log-container").scrollTop($("#log-container")[0].scrollHeight);
 
-                        $("#update-button").prop("disabled", false).html('<i class="fas fa-arrow-right me-2"></i> <?php echo $translations["gotomainpage"] ?? "Vissza a főoldalra"; ?>');
+                        $("#update-button").prop("disabled", false).html('<i class="fas fa-arrow-right me-2"></i> <?php echo $translations["gotomainpage"]; ?>');
 
                         if (response.success) {
                             $("#status-message").removeClass("alert-primary alert-info alert-danger").addClass("alert-success").html('<i class="fas fa-check-circle me-2"></i> ' + response.message);

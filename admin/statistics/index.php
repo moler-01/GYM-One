@@ -211,8 +211,8 @@ for ($i = 6; $i >= 0; $i--) {
 
 if ($result->num_rows > 0) {
     while ($row = $result->fetch_assoc()) {
-        $dates[$row['date']]['bank_card'] = (float)$row['bank_card'];
-        $dates[$row['date']]['cash'] = (float)$row['cash'];
+        $dates[$row['date']]['bank_card'] = (float) $row['bank_card'];
+        $dates[$row['date']]['cash'] = (float) $row['cash'];
     }
 }
 
@@ -260,14 +260,19 @@ $conn->close();
             </div>
             <div class="collapse navbar-collapse" id="myNavbar">
                 <ul class="nav navbar-nav">
-                    <li><a href="../dashboard"><i class="bi bi-speedometer"></i> <?php echo $translations["mainpage"]; ?></a></li>
+                    <li><a href="../dashboard"><i class="bi bi-speedometer"></i>
+                            <?php echo $translations["mainpage"]; ?></a></li>
                     <li><a href="../users"><i class="bi bi-people"></i> <?php echo $translations["users"]; ?></a></li>
-                    <li class="active"><a href="#"><i class="bi bi-bar-chart"></i> <?php echo $translations["statspage"]; ?></a></li>
-                    <li><a href="../boss/sell"><i class="bi bi-shop"></i> <?php echo $translations["sellpage"]; ?></a></li>
-                    <li><a href="../invoices"><i class="bi bi-receipt"></i> <?php echo $translations["invoicepage"]; ?></a></li>
+                    <li class="active"><a href="#"><i class="bi bi-bar-chart"></i>
+                            <?php echo $translations["statspage"]; ?></a></li>
+                    <li><a href="../boss/sell"><i class="bi bi-shop"></i> <?php echo $translations["sellpage"]; ?></a>
+                    </li>
+                    <li><a href="../invoices"><i class="bi bi-receipt"></i>
+                            <?php echo $translations["invoicepage"]; ?></a></li>
                     <?php if ($is_boss === 1) { ?>
                         <li class="dropdown">
-                            <a class="dropdown-toggle" data-toggle="dropdown" href="#"><i class="bi bi-gear"></i> <?php echo $translations["settings"]; ?> <span class="caret"></span></a>
+                            <a class="dropdown-toggle" data-toggle="dropdown" href="#"><i class="bi bi-gear"></i>
+                                <?php echo $translations["settings"]; ?> <span class="caret"></span></a>
                             <ul class="dropdown-menu">
                                 <li><a href="../boss/mainsettings"><?php echo $translations["businesspage"]; ?></a></li>
                                 <li><a href="../boss/workers"><?php echo $translations["workers"]; ?></a></li>
@@ -279,17 +284,22 @@ $conn->close();
                             </ul>
                         </li>
                     <?php } ?>
-                    <li><a href="../shop/tickets"><i class="bi bi-ticket"></i> <?php echo $translations["ticketspage"]; ?></a></li>
-                    <li><a href="../trainers/timetable"><i class="bi bi-calendar-event"></i> <?php echo $translations["timetable"]; ?></a></li>
-                    <li><a href="../trainers/personal"><i class="bi bi-award"></i> <?php echo $translations["trainers"]; ?></a></li>
+                    <li><a href="../shop/tickets"><i class="bi bi-ticket"></i>
+                            <?php echo $translations["ticketspage"]; ?></a></li>
+                    <li><a href="../trainers/timetable"><i class="bi bi-calendar-event"></i>
+                            <?php echo $translations["timetable"]; ?></a></li>
+                    <li><a href="../trainers/personal"><i class="bi bi-award"></i>
+                            <?php echo $translations["trainers"]; ?></a></li>
                     <?php if ($is_boss === 1) { ?>
-                        <li><a href="../updater"><i class="bi bi-cloud-download"></i> <?php echo $translations["updatepage"]; ?>
-                                <?php if ($is_new_version_available) : ?>
+                        <li><a href="../updater"><i class="bi bi-cloud-download"></i>
+                                <?php echo $translations["updatepage"]; ?>
+                                <?php if ($is_new_version_available): ?>
                                     <span class="badge badge-warning"><i class="bi bi-exclamation-circle"></i></span>
                                 <?php endif; ?>
                             </a></li>
                     <?php } ?>
-                    <li><a href="../log"><i class="bi bi-clock-history"></i> <?php echo $translations["logpage"]; ?></a></li>
+                    <li><a href="../log"><i class="bi bi-clock-history"></i> <?php echo $translations["logpage"]; ?></a>
+                    </li>
                 </ul>
             </div>
         </div>
@@ -328,7 +338,7 @@ $conn->close();
                     </li>
                     <?php
                     if ($is_boss === 1) {
-                    ?>
+                        ?>
                         <li class="sidebar-header">
                             <?php echo $translations["settings"]; ?>
                         </li>
@@ -374,7 +384,7 @@ $conn->close();
                                 <span><?php echo $translations["rulepage"]; ?></span>
                             </a>
                         </li>
-                    <?php
+                        <?php
                     }
                     ?>
                     <li class="sidebar-header">
@@ -405,19 +415,19 @@ $conn->close();
                     <li class="sidebar-header"><?php echo $translations["other-header"]; ?></li>
                     <?php
                     if ($is_boss === 1) {
-                    ?>
+                        ?>
                         <li class="sidebar-item">
                             <a class="sidebar-ling" href="../updater">
                                 <i class="bi bi-cloud-download"></i>
                                 <span><?php echo $translations["updatepage"]; ?></span>
-                                <?php if ($is_new_version_available) : ?>
+                                <?php if ($is_new_version_available): ?>
                                     <span class="sidebar-badge badge">
                                         <i class="bi bi-exclamation-circle"></i>
                                     </span>
                                 <?php endif; ?>
                             </a>
                         </li>
-                    <?php
+                        <?php
                     }
                     ?>
                     <li class="sidebar-item">
@@ -431,12 +441,14 @@ $conn->close();
             <br>
             <div class="col-sm-10">
                 <div class="d-none topnav d-sm-inline-block">
-                    <a href="https://gymoneglobal.com/discord" class="btn btn-primary mx-1" target="_blank" rel="noopener noreferrer">
+                    <a href="https://gymoneglobal.com/discord" class="btn btn-primary mx-1" target="_blank"
+                        rel="noopener noreferrer">
                         <i class="bi bi-question-circle"></i>
                         <?php echo $translations["support"]; ?>
                     </a>
 
-                    <a href="https://gymoneglobal.com/docs" class="btn btn-danger" target="_blank" rel="noopener noreferrer">
+                    <a href="https://gymoneglobal.com/docs" class="btn btn-danger" target="_blank"
+                        rel="noopener noreferrer">
                         <i class="bi bi-journals"></i>
                         <?php echo $translations["docs"]; ?>
                     </a>
@@ -448,7 +460,7 @@ $conn->close();
                 <?php
 
                 if ($is_boss == 1 && $is_new_version_available) {
-                ?>
+                    ?>
                     <div class="row">
                         <div class="col-sm-12">
                             <div class="alert alert-danger">
@@ -456,7 +468,7 @@ $conn->close();
                             </div>
                         </div>
                     </div>
-                <?php
+                    <?php
                 }
                 ?>
                 <div class="row">
@@ -565,15 +577,37 @@ $conn->close();
     </div>
 
     <!-- EXIT MODAL -->
-    <div class="modal fade" id="logoutModal" tabindex="-1" role="dialog" aria-labelledby="logoutModalLabel" aria-hidden="true">
-        <div class="modal-dialog" role="document">
-            <div class="modal-content">
-                <div class="modal-body">
-                    <p><?php echo $translations["exit-modal"]; ?></p>
-                </div>
-                <div class="modal-footer">
-                    <a type="button" class="btn btn-secondary" data-dismiss="modal"><?php echo $translations["not-yet"]; ?></a>
-                    <a href="../logout.php" type="button" class="btn btn-danger"><?php echo $translations["confirm"]; ?></a>
+    <div class="modal fade" id="logoutModal" tabindex="-1" role="dialog">
+        <div class="modal-dialog" style="margin-top: 100px;">
+            <div class="modal-content" style="border: none; box-shadow: 0 0 40px rgba(0,0,0,.2);">
+                <div class="modal-body text-center" style="padding: 40px;">
+
+                    <div style="margin-bottom: 25px;">
+                        <div style="width: 80px; height: 80px; margin: 0 auto;
+                                background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+                                border-radius: 50%;
+                                display: flex; align-items: center; justify-content: center;">
+                            <i class="bi bi-box-arrow-right" style="color: #fff; font-size: 40px;"></i>
+                        </div>
+                    </div>
+
+                    <h4 style="font-weight: bold; margin-bottom: 15px;">
+                        <p><?php echo $translations["exit-modal"]; ?></p>
+                    </h4>
+
+                    <div class="text-center">
+                        <a type="button" class="btn btn-default" data-dismiss="modal"
+                            style="padding: 8px 25px; margin-right: 10px;">
+                            <i class="bi bi-x-circle" style="margin-right: 5px;"></i>
+                            <?php echo $translations["not-yet"]; ?>
+                        </a>
+
+                        <a href="../logout.php" type="button" class="btn btn-danger" style="padding: 8px 25px;">
+                            <i class="bi bi-check-circle" style="margin-right: 5px;"></i>
+                            <?php echo $translations["confirm"]; ?>
+                        </a>
+                    </div>
+
                 </div>
             </div>
         </div>
@@ -581,7 +615,7 @@ $conn->close();
 
     <!-- SCRIPTS! -->
     <script>
-        document.addEventListener("DOMContentLoaded", function() {
+        document.addEventListener("DOMContentLoaded", function () {
             let seriesData = Object.values(<?php echo json_encode($dataRegistrations); ?>);
 
             var options = {
@@ -607,7 +641,7 @@ $conn->close();
                     tickAmount: Math.max(...seriesData),
                     min: 0,
                     labels: {
-                        formatter: function(value) {
+                        formatter: function (value) {
                             return Math.floor(value);
                         }
                     }
@@ -619,7 +653,7 @@ $conn->close();
         });
     </script>
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             var options = {
                 series: [<?php echo $maleCount; ?>, <?php echo $femaleCount; ?>],
                 chart: {
@@ -634,13 +668,13 @@ $conn->close();
                 labels: ['<?php echo $translations["boy"]; ?>', '<?php echo $translations["girl"]; ?>'],
                 dataLabels: {
                     enabled: true,
-                    formatter: function(val, opts) {
+                    formatter: function (val, opts) {
                         return val.toFixed(2) + '%';
                     }
                 },
                 tooltip: {
                     y: {
-                        formatter: function(val, opts) {
+                        formatter: function (val, opts) {
                             var total = opts.globals.series.reduce((a, b) => a + b, 0);
                             var percent = (val / total) * 100;
                             return percent.toFixed(2) + '%';
@@ -710,7 +744,9 @@ $conn->close();
         chart.render();
     </script>
     <script src="../../assets/js/date-time.js"></script>
-    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"
+        integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa"
+        crossorigin="anonymous"></script>
 </body>
 
 </html>

@@ -84,47 +84,170 @@ $dayNames = [
     7 => $translations["Sun"]
 ];
 
-$sql = "SELECT * FROM opening_hours ORDER BY day ASC";
-$result = $conn->query($sql);
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && $is_boss == 1) {
 
-$days = [];
-if ($result->num_rows > 0) {
-    while ($row = $result->fetch_assoc()) {
-        $days[] = $row;
+    if (isset($_POST['weekly_save'])) {
+
+        $old_hours = [];
+        $res = $conn->query("SELECT * FROM opening_hours ORDER BY day");
+        while ($r = $res->fetch_assoc()) {
+            $old_hours[$r['day']] = [
+                'open' => $r['open_time'],
+                'close' => $r['close_time']
+            ];
+        }
+
+        foreach ($dayNames as $day => $n) {
+            $isClosed = isset($_POST['closed'][$day]);
+            $open = $isClosed ? null : ($_POST['open_time'][$day] ?? null);
+            $close = $isClosed ? null : ($_POST['close_time'][$day] ?? null);
+
+            $stmt = $conn->prepare("
+                UPDATE opening_hours 
+                SET open_time=?, close_time=? 
+                WHERE day=?
+            ");
+            $stmt->bind_param("ssi", $open, $close, $day);
+            $stmt->execute();
+            $stmt->close();
+        }
+
+        $changes = [];
+        foreach ($dayNames as $day => $day_name) {
+            $isClosed = isset($_POST['closed'][$day]);
+            $new_open = $isClosed ? null : ($_POST['open_time'][$day] ?? null);
+            $new_close = $isClosed ? null : ($_POST['close_time'][$day] ?? null);
+
+            $old_open = $old_hours[$day]['open'];
+            $old_close = $old_hours[$day]['close'];
+
+            if ($old_open !== $new_open || $old_close !== $new_close) {
+                $old_text = $old_open && $old_close ? "$old_open - $old_close" : $translations["closed"];
+                $new_text = $new_open && $new_close ? "$new_open - $new_close" : $translations["closed"];
+
+                $changes["{$day_name}_old"] = $old_text;
+                $changes["{$day_name}_new"] = $new_text;
+            }
+        }
+
+        if (!empty($changes)) {
+            $log_sql = "INSERT INTO logs (userid, action, actioncolor, details, time) VALUES (?, ?, ?, ?, NOW())";
+            $stmt_log = $conn->prepare($log_sql);
+            $action = $translations["log_openhours_week_edit"];
+            $color = "info";
+            $details = json_encode($changes, JSON_UNESCAPED_UNICODE);
+            $stmt_log->bind_param("isss", $userid, $action, $color, $details);
+            $stmt_log->execute();
+            $stmt_log->close();
+        }
     }
-}
 
-if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    foreach ($dayNames as $dayNumber => $dayName) {
-        $isClosed = isset($_POST['closed'][$dayNumber]) ? 1 : 0;
+    if (isset($_POST['exception_save'])) {
+        $date = $_POST['exception_date'];
+        $isClosed = isset($_POST['exception_closed']) ? 1 : 0;
+        $open = $isClosed ? null : ($_POST['exception_open'] ?: null);
+        $close = $isClosed ? null : ($_POST['exception_close'] ?: null);
 
-        if ($isClosed) {
-            $open_time = 'NULL';
-            $close_time = 'NULL';
+        $check_sql = "SELECT open_time, close_time, is_closed FROM opening_hours_exceptions WHERE date = ?";
+        $check_stmt = $conn->prepare($check_sql);
+        $check_stmt->bind_param("s", $date);
+        $check_stmt->execute();
+        $check_result = $check_stmt->get_result();
+        $existing = $check_result->fetch_assoc();
+        $check_stmt->close();
+
+        $stmt = $conn->prepare("
+            INSERT INTO opening_hours_exceptions
+            (date, open_time, close_time, is_closed)
+            VALUES (?, ?, ?, ?)
+            ON DUPLICATE KEY UPDATE
+                open_time=VALUES(open_time),
+                close_time=VALUES(close_time),
+                is_closed=VALUES(is_closed)
+        ");
+        $stmt->bind_param("sssd", $date, $open, $close, $isClosed);
+        $stmt->execute();
+        $stmt->close();
+
+        $changes = [];
+
+        if ($existing) {
+            $old_text = $existing['is_closed'] ? $translations["closed"] : ($existing['open_time'] . " - " . $existing['close_time']);
+            $new_text = $isClosed ? $translations["closed"] : ($open . " - " . $close);
+
+            $changes['date'] = $date;
+            $changes['exception_old'] = $old_text;
+            $changes['exception_new'] = $new_text;
+
+            $log_action = $translations["log_exception_edit"] . ": " . $date;
         } else {
-            $open_time = isset($_POST['open_time'][$dayNumber]) && !empty($_POST['open_time'][$dayNumber])
-                ? "'" . $conn->real_escape_string($_POST['open_time'][$dayNumber]) . "'"
-                : 'NULL';
-            $close_time = isset($_POST['close_time'][$dayNumber]) && !empty($_POST['close_time'][$dayNumber])
-                ? "'" . $conn->real_escape_string($_POST['close_time'][$dayNumber]) . "'"
-                : 'NULL';
+            $new_text = $isClosed ? $translations["closed"] : ($open . " - " . $close);
+
+            $changes['date'] = $date;
+            $changes['exception_new'] = $new_text;
+
+            $log_action = $translations["log_exception_new"] . ": " . $date;
         }
 
-        $updateSql = "UPDATE opening_hours SET open_time = $open_time, close_time = $close_time WHERE day = $dayNumber";
-        if (!$conn->query($updateSql)) {
-            echo "Hiba a(z) $dayName frissítésekor: " . $conn->error;
+        $log_sql = "INSERT INTO logs (userid, action, actioncolor, details, time) VALUES (?, ?, ?, ?, NOW())";
+        $stmt_log = $conn->prepare($log_sql);
+        $color = "warning";
+        $details = json_encode($changes, JSON_UNESCAPED_UNICODE);
+        $stmt_log->bind_param("isss", $userid, $log_action, $color, $details);
+        $stmt_log->execute();
+        $stmt_log->close();
+    }
+
+    if (isset($_POST['exception_delete'])) {
+        $delete_date = $_POST['exception_delete_date'];
+
+        $get_sql = "SELECT open_time, close_time, is_closed FROM opening_hours_exceptions WHERE date = ?";
+        $get_stmt = $conn->prepare($get_sql);
+        $get_stmt->bind_param("s", $delete_date);
+        $get_stmt->execute();
+        $old_result = $get_stmt->get_result();
+        $old_exception = $old_result->fetch_assoc();
+        $get_stmt->close();
+
+        $stmt = $conn->prepare(
+            "DELETE FROM opening_hours_exceptions WHERE date=?"
+        );
+        $stmt->bind_param("s", $delete_date);
+        $stmt->execute();
+        $stmt->close();
+
+        if ($old_exception) {
+            $old_text = $old_exception['is_closed'] ? $translations["closed"] : ($old_exception['open_time'] . " - " . $old_exception['close_time']);
+
+            $changes = [
+                'date' => $delete_date,
+                'deleted_exception' => $old_text
+            ];
+
+            $log_sql = "INSERT INTO logs (userid, action, actioncolor, details, time) VALUES (?, ?, ?, ?, NOW())";
+            $stmt_log = $conn->prepare($log_sql);
+            $action = $translations["log_exception_delete"] . ": " . $delete_date;
+            $color = "danger";
+            $details = json_encode($changes, JSON_UNESCAPED_UNICODE);
+            $stmt_log->bind_param("isss", $userid, $action, $color, $details);
+            $stmt_log->execute();
+            $stmt_log->close();
         }
     }
+
     header("Location: " . $_SERVER['PHP_SELF']);
-    $action = $translations['success-update-hours'];
-    $actioncolor = 'success';
-    $sql = "INSERT INTO logs (userid, action, actioncolor, time) 
-            VALUES (?, ?, ?, NOW())";
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param("iss", $userid, $action, $actioncolor);
-    $stmt->execute();
     exit();
 }
+
+$days = [];
+$res = $conn->query("SELECT * FROM opening_hours ORDER BY day");
+while ($r = $res->fetch_assoc())
+    $days[] = $r;
+
+$exceptions = [];
+$res = $conn->query("SELECT * FROM opening_hours_exceptions ORDER BY date");
+while ($r = $res->fetch_assoc())
+    $exceptions[] = $r;
 
 $file_path = 'https://api.gymoneglobal.com/latest/version.txt';
 
@@ -171,14 +294,20 @@ $conn->close();
             </div>
             <div class="collapse navbar-collapse" id="myNavbar">
                 <ul class="nav navbar-nav">
-                    <li><a href="../../dashboard"><i class="bi bi-speedometer"></i> <?php echo $translations["mainpage"]; ?></a></li>
-                    <li><a href="../../users"><i class="bi bi-people"></i> <?php echo $translations["users"]; ?></a></li>
-                    <li><a href="../../statistics"><i class="bi bi-bar-chart"></i> <?php echo $translations["statspage"]; ?></a></li>
-                    <li><a href="../../boss/sell"><i class="bi bi-shop"></i> <?php echo $translations["sellpage"]; ?></a></li>
-                    <li><a href="../../invoices"><i class="bi bi-receipt"></i> <?php echo $translations["invoicepage"]; ?></a></li>
+                    <li><a href="../../dashboard"><i class="bi bi-speedometer"></i>
+                            <?php echo $translations["mainpage"]; ?></a></li>
+                    <li><a href="../../users"><i class="bi bi-people"></i> <?php echo $translations["users"]; ?></a>
+                    </li>
+                    <li><a href="../../statistics"><i class="bi bi-bar-chart"></i>
+                            <?php echo $translations["statspage"]; ?></a></li>
+                    <li><a href="../../boss/sell"><i class="bi bi-shop"></i>
+                            <?php echo $translations["sellpage"]; ?></a></li>
+                    <li><a href="../../invoices"><i class="bi bi-receipt"></i>
+                            <?php echo $translations["invoicepage"]; ?></a></li>
                     <?php if ($is_boss === 1) { ?>
                         <li class="dropdown active">
-                            <a class="dropdown-toggle" data-toggle="dropdown" href="#"><i class="bi bi-gear"></i> <?php echo $translations["settings"]; ?> <span class="caret"></span></a>
+                            <a class="dropdown-toggle" data-toggle="dropdown" href="#"><i class="bi bi-gear"></i>
+                                <?php echo $translations["settings"]; ?> <span class="caret"></span></a>
                             <ul class="dropdown-menu">
                                 <li><a href="../../boss/mainsettings"><?php echo $translations["businesspage"]; ?></a></li>
                                 <li><a href="../../boss/workers"><?php echo $translations["workers"]; ?></a></li>
@@ -190,17 +319,22 @@ $conn->close();
                             </ul>
                         </li>
                     <?php } ?>
-                    <li><a href="../../shop/tickets"><i class="bi bi-ticket"></i> <?php echo $translations["ticketspage"]; ?></a></li>
-                    <li><a href="../../trainers/timetable"><i class="bi bi-calendar-event"></i> <?php echo $translations["timetable"]; ?></a></li>
-                    <li><a href="../../trainers/personal"><i class="bi bi-award"></i> <?php echo $translations["trainers"]; ?></a></li>
+                    <li><a href="../../shop/tickets"><i class="bi bi-ticket"></i>
+                            <?php echo $translations["ticketspage"]; ?></a></li>
+                    <li><a href="../../trainers/timetable"><i class="bi bi-calendar-event"></i>
+                            <?php echo $translations["timetable"]; ?></a></li>
+                    <li><a href="../../trainers/personal"><i class="bi bi-award"></i>
+                            <?php echo $translations["trainers"]; ?></a></li>
                     <?php if ($is_boss === 1) { ?>
-                        <li><a href="../../updater"><i class="bi bi-cloud-download"></i> <?php echo $translations["updatepage"]; ?>
-                                <?php if ($is_new_version_available) : ?>
+                        <li><a href="../../updater"><i class="bi bi-cloud-download"></i>
+                                <?php echo $translations["updatepage"]; ?>
+                                <?php if ($is_new_version_available): ?>
                                     <span class="badge badge-warning"><i class="bi bi-exclamation-circle"></i></span>
                                 <?php endif; ?>
                             </a></li>
                     <?php } ?>
-                    <li><a href="../../log"><i class="bi bi-clock-history"></i> <?php echo $translations["logpage"]; ?></a></li>
+                    <li><a href="../../log"><i class="bi bi-clock-history"></i>
+                            <?php echo $translations["logpage"]; ?></a></li>
                 </ul>
             </div>
         </div>
@@ -239,7 +373,7 @@ $conn->close();
                     </li>
                     <?php
                     if ($is_boss === 1) {
-                    ?>
+                        ?>
                         <li class="sidebar-header">
                             <?php echo $translations["settings"]; ?>
                         </li>
@@ -285,7 +419,7 @@ $conn->close();
                                 <span><?php echo $translations["rulepage"]; ?></span>
                             </a>
                         </li>
-                    <?php
+                        <?php
                     }
                     ?>
                     <li class="sidebar-header">
@@ -316,19 +450,19 @@ $conn->close();
                     <li class="sidebar-header"><?php echo $translations["other-header"]; ?></li>
                     <?php
                     if ($is_boss === 1) {
-                    ?>
+                        ?>
                         <li class="sidebar-item">
                             <a class="sidebar-ling" href="../../updater">
                                 <i class="bi bi-cloud-download"></i>
                                 <span><?php echo $translations["updatepage"]; ?></span>
-                                <?php if ($is_new_version_available) : ?>
+                                <?php if ($is_new_version_available): ?>
                                     <span class="sidebar-badge badge">
                                         <i class="bi bi-exclamation-circle"></i>
                                     </span>
                                 <?php endif; ?>
                             </a>
                         </li>
-                    <?php
+                        <?php
                     }
                     ?>
                     <li class="sidebar-item">
@@ -361,69 +495,204 @@ $conn->close();
                 </div>
                 <div class="row">
                     <div class="col-sm-12">
-                        <?php echo $alerts_html; ?>
-                        <div class="card shadow">
+
+                        <?= $alerts_html ?? '' ?>
+
+                        <div class="card shadow mb-4">
                             <div class="card-body">
 
-                                <?php
-                                if ($is_boss == 1) {
-                                ?>
-                                    <form method="post" action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>">
-                                        <table class="table">
-                                            <thead>
+                                <?php if ($is_boss == 1): ?>
+
+                                    <h3 class="mb-3"><?php echo $translations["weekly-opentime"]; ?></h3>
+
+                                    <form method="post" action="<?= htmlspecialchars($_SERVER["PHP_SELF"]); ?>">
+                                        <input type="hidden" name="weekly_save" value="1">
+
+                                        <table class="table table-bordered align-middle">
+                                            <thead class="table-light">
                                                 <tr>
-                                                    <th><?php echo $translations["day"]; ?></th>
-                                                    <th><?php echo $translations["opentime"]; ?></th>
-                                                    <th><?php echo $translations["closetime"]; ?></th>
-                                                    <th><?php echo $translations["checkbox-closed"]; ?></th>
+                                                    <th><?= $translations["day"]; ?></th>
+                                                    <th><?= $translations["opentime"]; ?></th>
+                                                    <th><?= $translations["closetime"]; ?></th>
+                                                    <th class="text-center"><?= $translations["checkbox-closed"]; ?></th>
                                                 </tr>
                                             </thead>
                                             <tbody>
                                                 <?php foreach ($days as $day): ?>
                                                     <tr>
                                                         <td><?= htmlspecialchars($dayNames[$day['day']]) ?></td>
+
                                                         <td>
-                                                            <input type="time" name="open_time[<?= $day['day'] ?>]" value="<?= htmlspecialchars($day['open_time']) ?>" class="form-control" <?= is_null($day['open_time']) ? 'disabled' : '' ?>>
+                                                            <input type="time" class="form-control"
+                                                                name="open_time[<?= $day['day'] ?>]"
+                                                                value="<?= htmlspecialchars($day['open_time']) ?>"
+                                                                <?= is_null($day['open_time']) ? 'disabled' : '' ?>>
                                                         </td>
+
                                                         <td>
-                                                            <input type="time" name="close_time[<?= $day['day'] ?>]" value="<?= htmlspecialchars($day['close_time']) ?>" class="form-control" <?= is_null($day['close_time']) ? 'disabled' : '' ?>>
+                                                            <input type="time" class="form-control"
+                                                                name="close_time[<?= $day['day'] ?>]"
+                                                                value="<?= htmlspecialchars($day['close_time']) ?>"
+                                                                <?= is_null($day['open_time']) ? 'disabled' : '' ?>>
                                                         </td>
+
                                                         <td class="text-center">
-                                                            <input type="checkbox" name="closed[<?= $day['day'] ?>]" value="1" <?= is_null($day['open_time']) && is_null($day['close_time']) ? 'checked' : '' ?> onclick="toggleTimeFields(this, <?= $day['day'] ?>)">
+                                                            <input type="checkbox" name="closed[<?= $day['day'] ?>]" value="1"
+                                                                <?= is_null($day['open_time']) ? 'checked' : '' ?>
+                                                                onclick="toggleDay(this, <?= $day['day'] ?>)">
                                                         </td>
                                                     </tr>
                                                 <?php endforeach; ?>
                                             </tbody>
                                         </table>
-                                        <button type="submit" class="btn btn-primary"><i class="bi bi-save"></i> <?= $translations["save"]; ?></button>
 
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="bi bi-save"></i> <?= $translations["save"]; ?>
+                                        </button>
                                     </form>
-                                <?php
-                                } else {
-                                    echo $translations["dont-access"];
-                                }
-                                ?>
+
+                                    <hr class="my-4">
+
+                                    <h3 class="mb-3"><?php echo $translations["special-opentime"]; ?></h3>
+
+                                    <form method="post" class="row g-2 mb-4">
+                                        <div class="col-md-3">
+                                            <input type="date" name="exception_date" required class="form-control">
+                                        </div>
+
+                                        <div class="col-md-3">
+                                            <input type="time" name="exception_open" class="form-control">
+                                        </div>
+
+                                        <div class="col-md-3">
+                                            <input type="time" name="exception_close" class="form-control">
+                                        </div>
+
+                                        <div class="col-md-2 d-flex align-items-center">
+                                            <input type="checkbox" name="exception_closed" id="exception_closed"
+                                                onclick="toggleException(this)">
+                                            <label for="exception_closed"
+                                                class="ms-2 mb-0"><?= $translations["checkbox-closed"]; ?></label>
+                                        </div>
+
+                                        <div class="col-md-12 mt-2">
+                                            <button name="exception_save" class="btn btn-success">
+                                                <i class="bi bi-plus-circle"></i> <?php echo $translations["add"]; ?>
+                                            </button>
+                                        </div>
+                                    </form>
+
+                                    <table class="table table-striped table-bordered">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th><?php echo $translations["date-log"]; ?></th>
+                                                <th><?php echo $translations["openhourspage"]; ?></th>
+                                                <th></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <?php foreach ($exceptions as $e): ?>
+                                                <tr>
+                                                    <td><?= htmlspecialchars($e['date']) ?></td>
+                                                    <td>
+                                                        <?= $e['is_closed']
+                                                            ? '<strong class="text-danger">' . htmlspecialchars($translations["closed"]) . '</strong>'
+                                                            : htmlspecialchars(
+                                                                (new DateTime($e['open_time']))->format('H:i') . ' – ' .
+                                                                (new DateTime($e['close_time']))->format('H:i')
+                                                            )
+                                                            ?>
+                                                    </td>
+                                                    <td class="text-center">
+                                                        <form method="post">
+                                                            <input type="hidden" name="exception_delete_date"
+                                                                value="<?= htmlspecialchars($e['date']) ?>">
+                                                            <button name="exception_delete" class="btn btn-danger btn-sm">
+                                                                <?php echo $translations["delete"]; ?>
+                                                            </button>
+                                                        </form>
+                                                    </td>
+                                                </tr>
+                                            <?php endforeach; ?>
+                                        </tbody>
+                                    </table>
+
+                                <?php else: ?>
+                                    <div class="alert alert-danger">
+                                        <?= $translations["dont-access"]; ?>
+                                    </div>
+                                <?php endif; ?>
 
                             </div>
                         </div>
                     </div>
                 </div>
+                <script>
+                    function toggleDay(checkbox, day) {
+                        const openInput = document.querySelector(`input[name="open_time[${day}]"]`);
+                        const closeInput = document.querySelector(`input[name="close_time[${day}]"]`);
+
+                        if (checkbox.checked) {
+                            openInput.disabled = true;
+                            closeInput.disabled = true;
+                            openInput.value = '';
+                            closeInput.value = '';
+                        } else {
+                            openInput.disabled = false;
+                            closeInput.disabled = false;
+                        }
+                    }
+
+                    function toggleException(checkbox) {
+                        const open = document.querySelector('input[name="exception_open"]');
+                        const close = document.querySelector('input[name="exception_close"]');
+
+                        if (checkbox.checked) {
+                            open.disabled = true;
+                            close.disabled = true;
+                            open.value = '';
+                            close.value = '';
+                        } else {
+                            open.disabled = false;
+                            close.disabled = false;
+                        }
+                    }
+                </script>
+
             </div>
         </div>
     </div>
+    <!-- EXIT MODAL -->
+    <div class="modal fade" id="logoutModal" tabindex="-1" role="dialog">
+        <div class="modal-dialog" style="margin-top: 100px;">
+            <div class="modal-content" style="border: none; box-shadow: 0 0 40px rgba(0,0,0,.2);">
+                <div class="modal-body text-center" style="padding: 40px;">
 
-    <div class="modal fade" id="logoutModal" tabindex="-1" role="dialog" aria-labelledby="logoutModalLabel"
-        aria-hidden="true">
-        <div class="modal-dialog" role="document">
-            <div class="modal-content">
-                <div class="modal-body">
-                    <p><?php echo $translations["exit-modal"]; ?></p>
-                </div>
-                <div class="modal-footer">
-                    <a type="button" class="btn btn-secondary"
-                        data-dismiss="modal"><?php echo $translations["not-yet"]; ?></a>
-                    <a href="../../logout.php" type="button"
-                        class="btn btn-danger"><?php echo $translations["confirm"]; ?></a>
+                    <div style="margin-bottom: 25px;">
+                        <div style="width: 80px; height: 80px; margin: 0 auto;
+                                background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+                                border-radius: 50%;
+                                display: flex; align-items: center; justify-content: center;">
+                            <i class="bi bi-box-arrow-right" style="color: #fff; font-size: 40px;"></i>
+                        </div>
+                    </div>
+
+                    <h4 style="font-weight: bold; margin-bottom: 15px;">
+                        <p><?php echo $translations["exit-modal"]; ?></p>
+                    </h4>
+
+                    <div class="text-center">
+                        <a type="button" class="btn btn-default" data-dismiss="modal"
+                            style="padding: 8px 25px; margin-right: 10px;">
+                            <i class="bi bi-x-circle" style="margin-right: 5px;"></i>
+                            <?php echo $translations["not-yet"]; ?>
+                        </a>
+
+                        <a href="../../logout.php" type="button" class="btn btn-danger" style="padding: 8px 25px;">
+                            <i class="bi bi-check-circle" style="margin-right: 5px;"></i>
+                            <?php echo $translations["confirm"]; ?>
+                        </a>
+                    </div>
                 </div>
             </div>
         </div>

@@ -141,9 +141,12 @@ $conn->close();
             <div class="collapse navbar-collapse" id="myNavbar">
                 <ul class="nav navbar-nav">
                     <li><a href="../"><i class="bi bi-house"></i> <?php echo $translations["mainpage"]; ?></a></li>
-                    <li class="active"><a href=""><i class="bi bi-graph-up"></i> <?php echo $translations["statspage"]; ?></a></li>
-                    <li><a href="../profile/"><i class="bi bi-person-badge"></i> <?php echo $translations["profilepage"]; ?></a></li>
-                    <li><a href="../invoices/"><i class="bi bi-receipt"></i> <?php echo $translations["invoicepage"]; ?></a></li>
+                    <li class="active"><a href=""><i class="bi bi-graph-up"></i>
+                            <?php echo $translations["statspage"]; ?></a></li>
+                    <li><a href="../profile/"><i class="bi bi-person-badge"></i>
+                            <?php echo $translations["profilepage"]; ?></a></li>
+                    <li><a href="../invoices/"><i class="bi bi-receipt"></i>
+                            <?php echo $translations["invoicepage"]; ?></a></li>
                 </ul>
             </div>
         </div>
@@ -191,7 +194,8 @@ $conn->close();
                             <div class="card-body text-start">
                                 <div class="row">
                                     <div class="col-xs-10 text-start">
-                                        <h4 class="card-title fw-semibold"><?php echo $translations["latestsessiontime"]; ?></h4>
+                                        <h4 class="card-title fw-semibold">
+                                            <?php echo $translations["latestsessiontime"]; ?></h4>
                                     </div>
                                     <div class="col-auto">
                                         <div class="d-inline-block fs-1 lh-1 text-primary roundbg p-4 rounded-pill">
@@ -201,7 +205,8 @@ $conn->close();
                                 </div>
                                 <div class="row text-center">
                                     <div class="col">
-                                        <h2><b><?php echo $latest_session_time; ?></b> <?php echo $translations["minutes"]; ?></h2>
+                                        <h2><b><?php echo $latest_session_time; ?></b>
+                                            <?php echo $translations["minutes"]; ?></h2>
                                     </div>
                                 </div>
                             </div>
@@ -212,7 +217,8 @@ $conn->close();
                             <div class="card-body text-start">
                                 <div class="row">
                                     <div class="col-xs-10 text-start">
-                                        <h4 class="card-title fw-semibold"><?php echo $translations["averagetraintime"]; ?></h4>
+                                        <h4 class="card-title fw-semibold">
+                                            <?php echo $translations["averagetraintime"]; ?></h4>
                                     </div>
                                     <div class="col-auto">
                                         <div class="d-inline-block fs-1 lh-1 text-primary roundbg p-4 rounded-pill">
@@ -222,7 +228,8 @@ $conn->close();
                                 </div>
                                 <div class="row text-center">
                                     <div class="col">
-                                        <h2><b><?php echo $avg_duration; ?></b> <?php echo $translations["minutes"]; ?></h2>
+                                        <h2><b><?php echo $avg_duration; ?></b> <?php echo $translations["minutes"]; ?>
+                                        </h2>
                                     </div>
                                 </div>
                             </div>
@@ -233,7 +240,8 @@ $conn->close();
                             <div class="card-body text-start">
                                 <div class="row">
                                     <div class="col-xs-10 text-start">
-                                        <h4 class="card-title fw-semibold"><?php echo $translations["latesttraining"]; ?></h4>
+                                        <h4 class="card-title fw-semibold">
+                                            <?php echo $translations["latesttraining"]; ?></h4>
                                     </div>
                                     <div class="col-auto">
                                         <div class="d-inline-block fs-1 lh-1 text-primary roundbg p-4 rounded-pill">
@@ -266,15 +274,36 @@ $conn->close();
         </div>
 
         <!-- EXIT MODAL -->
-        <div class="modal fade" id="logoutModal" tabindex="-1" role="dialog" aria-labelledby="logoutModalLabel" aria-hidden="true">
-            <div class="modal-dialog" role="document">
-                <div class="modal-content">
-                    <div class="modal-body">
-                        <p class="lead"><?php echo $translations["exit-modal"]; ?></p>
-                    </div>
-                    <div class="modal-footer">
-                        <a type="button" class="btn btn-secondary" data-dismiss="modal"><?php echo $translations["not-yet"]; ?></a>
-                        <a href="../logout.php" type="button" class="btn btn-danger"><?php echo $translations["confirm"]; ?></a>
+        <div class="modal fade" id="logoutModal" tabindex="-1" role="dialog">
+            <div class="modal-dialog" style="margin-top: 100px;">
+                <div class="modal-content" style="border: none; box-shadow: 0 0 40px rgba(0,0,0,.2);">
+                    <div class="modal-body text-center" style="padding: 40px;">
+
+                        <div style="margin-bottom: 25px;">
+                            <div style="width: 80px; height: 80px; margin: 0 auto;
+                                background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+                                border-radius: 50%;
+                                display: flex; align-items: center; justify-content: center;">
+                                <i class="bi bi-box-arrow-right" style="color: #fff; font-size: 40px;"></i>
+                            </div>
+                        </div>
+
+                        <h4 style="font-weight: bold; margin-bottom: 15px;">
+                            <p><?php echo $translations["exit-modal"]; ?></p>
+                        </h4>
+
+                        <div class="text-center">
+                            <a type="button" class="btn btn-default" data-dismiss="modal"
+                                style="padding: 8px 25px; margin-right: 10px;">
+                                <i class="bi bi-x-circle" style="margin-right: 5px;"></i>
+                                <?php echo $translations["not-yet"]; ?>
+                            </a>
+
+                            <a href="../logout.php" type="button" class="btn btn-danger" style="padding: 8px 25px;">
+                                <i class="bi bi-check-circle" style="margin-right: 5px;"></i>
+                                <?php echo $translations["confirm"]; ?>
+                            </a>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -282,9 +311,6 @@ $conn->close();
         <script>
             var dates = <?php echo json_encode($chart_dates); ?>;
             var durations = <?php echo json_encode($chart_durations); ?>;
-
-            // console.log(dates);
-            // console.log(durations);
             var options = {
                 chart: {
                     type: 'line',

@@ -59,33 +59,43 @@ $translations = json_decode(file_get_contents($langFile), true);
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     if (isset($_POST['business_name'])) {
-        $business_name = $_POST['business_name'] ?? '';
-        $street_env = $_POST['street'] ?? '';
-        $country_env = $_POST['country'] ?? '';
-        $city_env = $_POST['city'] ?? '';
-        $house_no_env = $_POST['house_number'] ?? '';
-        $description_env = $_POST["description"] ?? '';
-        $metakey_env = $_POST["metakey"] ?? '';
-        $langcode_env = $_POST['lang_code'] ?? '';
-        $currency_env = $_POST['currency'] ?? '';
-        $gkey_env = $_POST['gkey'] ?? '';
-        $capacity_env = $_POST["capacity"] ?? '';
-        $phoneno_env = $_POST["phone_no"] ?? '';
-        $about = $_POST['about'] ?? '';
+        $fields = [
+            'BUSINESS_NAME' => 'business_name',
+            'STREET' => 'street',
+            'COUNTRY' => 'country',
+            'CITY' => 'city',
+            'HOUSE_NUMBER' => 'house_number',
+            'DESCRIPTION' => 'description',
+            'META_KEY' => 'metakey',
+            'LANG_CODE' => 'lang_code',
+            'CURRENCY' => 'currency',
+            'GOOGLE_KEY' => 'gkey',
+            'CAPACITY' => 'capacity',
+            'PHONE_NO' => 'phone_no',
+            'ABOUT' => 'about'
+        ];
 
-        $env_data["BUSINESS_NAME"] = $business_name;
-        $env_data['STREET'] = $street_env;
-        $env_data['COUNTRY'] = $country_env;
-        $env_data['CITY'] = $city_env;
-        $env_data['DESCRIPTION'] = $description_env;
-        $env_data['META_KEY'] = $metakey_env;
-        $env_data['HOUSE_NUMBER'] = $house_no_env;
-        $env_data['LANG_CODE'] = $langcode_env;
-        $env_data['CURRENCY'] = $currency_env;
-        $env_data['GOOGLE_KEY'] = $gkey_env;
-        $env_data["CAPACITY"] = $capacity_env;
-        $env_data["PHONE_NO"] = $phoneno_env;
-        $env_data["ABOUT"] = $about;
+        $new_data = [];
+        foreach ($fields as $env_key => $post_key) {
+            $new_data[$env_key] = $_POST[$post_key] ?? '';
+        }
+
+        $old_data = [];
+        foreach ($fields as $env_key => $post_key) {
+            $old_data[$env_key] = $env_data[$env_key] ?? '';
+        }
+
+        $changes = [];
+        foreach ($fields as $env_key => $post_key) {
+            if ($old_data[$env_key] !== $new_data[$env_key]) {
+                $changes["{$env_key}_old"] = $old_data[$env_key];
+                $changes["{$env_key}_new"] = $new_data[$env_key];
+            }
+        }
+
+        foreach ($fields as $env_key => $post_key) {
+            $env_data[$env_key] = $new_data[$env_key];
+        }
 
         $env_content = '';
         foreach ($env_data as $key => $value) {
@@ -93,15 +103,18 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         }
 
         if (file_put_contents('../../../.env', $env_content) !== false) {
-            $alerts_html .= "<div class='alert alert-success'>{$translations["success-update"]}</div>";
-            $action = $translations['success-update-env-main'];
-            $actioncolor = 'danger';
-            $sql = "INSERT INTO logs (userid, action, actioncolor, time) 
-            VALUES (?, ?, ?, NOW())";
-            $stmt = $conn->prepare($sql);
-            $stmt->bind_param("iss", $userid, $action, $actioncolor);
-            $stmt->execute();
+            if (!empty($changes)) {
+                $log_sql = "INSERT INTO logs (userid, action, actioncolor, details, time) VALUES (?, ?, ?, ?, NOW())";
+                $stmt_log = $conn->prepare($log_sql);
+                $action = $translations['success-update-env-main'];
+                $color = "info";
+                $details = json_encode($changes, JSON_UNESCAPED_UNICODE);
+                $stmt_log->bind_param("isss", $userid, $action, $color, $details);
+                $stmt_log->execute();
+                $stmt_log->close();
+            }
 
+            $alerts_html .= "<div class='alert alert-success'>{$translations["success-update"]}</div>";
             header("Refresh:2");
         } else {
             $alerts_html .= "<div class='alert alert-danger'>{$translations["error-env"]}</div>";
@@ -197,14 +210,20 @@ $conn->close();
             </div>
             <div class="collapse navbar-collapse" id="myNavbar">
                 <ul class="nav navbar-nav">
-                    <li><a href="../../dashboard"><i class="bi bi-speedometer"></i> <?php echo $translations["mainpage"]; ?></a></li>
-                    <li><a href="../../users"><i class="bi bi-people"></i> <?php echo $translations["users"]; ?></a></li>
-                    <li><a href="../../statistics"><i class="bi bi-bar-chart"></i> <?php echo $translations["statspage"]; ?></a></li>
-                    <li><a href="../../boss/sell"><i class="bi bi-shop"></i> <?php echo $translations["sellpage"]; ?></a></li>
-                    <li><a href="../../invoices"><i class="bi bi-receipt"></i> <?php echo $translations["invoicepage"]; ?></a></li>
+                    <li><a href="../../dashboard"><i class="bi bi-speedometer"></i>
+                            <?php echo $translations["mainpage"]; ?></a></li>
+                    <li><a href="../../users"><i class="bi bi-people"></i> <?php echo $translations["users"]; ?></a>
+                    </li>
+                    <li><a href="../../statistics"><i class="bi bi-bar-chart"></i>
+                            <?php echo $translations["statspage"]; ?></a></li>
+                    <li><a href="../../boss/sell"><i class="bi bi-shop"></i>
+                            <?php echo $translations["sellpage"]; ?></a></li>
+                    <li><a href="../../invoices"><i class="bi bi-receipt"></i>
+                            <?php echo $translations["invoicepage"]; ?></a></li>
                     <?php if ($is_boss === 1) { ?>
                         <li class="dropdown active">
-                            <a class="dropdown-toggle" data-toggle="dropdown" href="#"><i class="bi bi-gear"></i> <?php echo $translations["settings"]; ?> <span class="caret"></span></a>
+                            <a class="dropdown-toggle" data-toggle="dropdown" href="#"><i class="bi bi-gear"></i>
+                                <?php echo $translations["settings"]; ?> <span class="caret"></span></a>
                             <ul class="dropdown-menu">
                                 <li class="active"><a href="#"><?php echo $translations["businesspage"]; ?></a></li>
                                 <li><a href="../../boss/workers"><?php echo $translations["workers"]; ?></a></li>
@@ -216,17 +235,22 @@ $conn->close();
                             </ul>
                         </li>
                     <?php } ?>
-                    <li><a href="../../shop/tickets"><i class="bi bi-ticket"></i> <?php echo $translations["ticketspage"]; ?></a></li>
-                    <li><a href="../../trainers/timetable"><i class="bi bi-calendar-event"></i> <?php echo $translations["timetable"]; ?></a></li>
-                    <li><a href="../../trainers/personal"><i class="bi bi-award"></i> <?php echo $translations["trainers"]; ?></a></li>
+                    <li><a href="../../shop/tickets"><i class="bi bi-ticket"></i>
+                            <?php echo $translations["ticketspage"]; ?></a></li>
+                    <li><a href="../../trainers/timetable"><i class="bi bi-calendar-event"></i>
+                            <?php echo $translations["timetable"]; ?></a></li>
+                    <li><a href="../../trainers/personal"><i class="bi bi-award"></i>
+                            <?php echo $translations["trainers"]; ?></a></li>
                     <?php if ($is_boss === 1) { ?>
-                        <li><a href="../../updater"><i class="bi bi-cloud-download"></i> <?php echo $translations["updatepage"]; ?>
-                                <?php if ($is_new_version_available) : ?>
+                        <li><a href="../../updater"><i class="bi bi-cloud-download"></i>
+                                <?php echo $translations["updatepage"]; ?>
+                                <?php if ($is_new_version_available): ?>
                                     <span class="badge badge-warning"><i class="bi bi-exclamation-circle"></i></span>
                                 <?php endif; ?>
                             </a></li>
                     <?php } ?>
-                    <li><a href="../../log"><i class="bi bi-clock-history"></i> <?php echo $translations["logpage"]; ?></a></li>
+                    <li><a href="../../log"><i class="bi bi-clock-history"></i>
+                            <?php echo $translations["logpage"]; ?></a></li>
                 </ul>
             </div>
         </div>
@@ -265,7 +289,7 @@ $conn->close();
                     </li>
                     <?php
                     if ($is_boss === 1) {
-                    ?>
+                        ?>
                         <li class="sidebar-header">
                             <?php echo $translations["settings"]; ?>
                         </li>
@@ -311,7 +335,7 @@ $conn->close();
                                 <span><?php echo $translations["rulepage"]; ?></span>
                             </a>
                         </li>
-                    <?php
+                        <?php
                     }
                     ?>
                     <li class="sidebar-header">
@@ -342,19 +366,19 @@ $conn->close();
                     <li class="sidebar-header"><?php echo $translations["other-header"]; ?></li>
                     <?php
                     if ($is_boss === 1) {
-                    ?>
+                        ?>
                         <li class="sidebar-item">
                             <a class="sidebar-ling" href="../../updater">
                                 <i class="bi bi-cloud-download"></i>
                                 <span><?php echo $translations["updatepage"]; ?></span>
-                                <?php if ($is_new_version_available) : ?>
+                                <?php if ($is_new_version_available): ?>
                                     <span class="sidebar-badge badge">
                                         <i class="bi bi-exclamation-circle"></i>
                                     </span>
                                 <?php endif; ?>
                             </a>
                         </li>
-                    <?php
+                        <?php
                     }
                     ?>
                     <li class="sidebar-item">
@@ -393,13 +417,13 @@ $conn->close();
 
                                 <?php
                                 if ($is_boss == 1) {
-                                ?>
+                                    ?>
                                     <form method="POST">
                                         <div class="form-row">
                                             <div class="form-group col-md-6">
                                                 <label for="business_name"><?php echo $translations["gym-name"]; ?>:</label>
                                                 <input type="text" class="form-control" id="business_name"
-                                                    name="business_name"
+                                                    name="business_name" required
                                                     value="<?= htmlspecialchars($env_data['BUSINESS_NAME'] ?? '') ?>">
                                             </div>
                                             <div class="form-group col-md-3">
@@ -424,11 +448,13 @@ $conn->close();
                                                 <label
                                                     for="description"><?php echo $translations["websitedescription"]; ?>:</label>
                                                 <input type="text" class="form-control" id="description" name="description"
+                                                    required minlength="20"
                                                     value="<?= htmlspecialchars($env_data['DESCRIPTION'] ?? '') ?>">
                                             </div>
                                             <div class="form-group col-md-4">
                                                 <label for="capacity"><?php echo $translations["capacityenv"]; ?>:</label>
-                                                <input type="text" class="form-control" id="capacity" name="capacity"
+                                                <input type="number" class="form-control" id="capacity" name="capacity"
+                                                    min="10" required
                                                     value="<?= htmlspecialchars($env_data['CAPACITY'] ?? '') ?>">
                                             </div>
                                         </div>
@@ -445,22 +471,22 @@ $conn->close();
                                         <div class="form-row">
                                             <div class="form-group col-md-4">
                                                 <label for="country"><?php echo $translations["country"]; ?>:</label>
-                                                <input type="text" class="form-control" id="country" name="country"
+                                                <input type="text" class="form-control" id="country" name="country" required
                                                     value="<?= htmlspecialchars($env_data['COUNTRY'] ?? '') ?>">
                                             </div>
                                             <div class="form-group col-md-3">
                                                 <label for="city"><?php echo $translations["city"]; ?>:</label>
-                                                <input type="text" class="form-control" id="city" name="city"
+                                                <input type="text" class="form-control" id="city" name="city" required
                                                     value="<?= htmlspecialchars($env_data['CITY'] ?? '') ?>">
                                             </div>
                                             <div class="form-group col-md-3">
                                                 <label for="street"><?php echo $translations["street"]; ?>:</label>
-                                                <input type="text" class="form-control" id="street" name="street"
+                                                <input type="text" class="form-control" id="street" name="street" required
                                                     value="<?= htmlspecialchars($env_data['STREET'] ?? '') ?>">
                                             </div>
                                             <div class="form-group col-md-2">
                                                 <label for="house_number"><?php echo $translations["hause-no"]; ?>:</label>
-                                                <input type="text" class="form-control" id="house_number"
+                                                <input type="number" class="form-control" id="house_number" required
                                                     name="house_number"
                                                     value="<?= htmlspecialchars($env_data['HOUSE_NUMBER'] ?? '') ?>">
                                             </div>
@@ -468,15 +494,18 @@ $conn->close();
                                                 <div class="form-group col-md-4">
                                                     <label for="currency"><?php echo $translations["currency"]; ?>:</label>
                                                     <input type="text" class="form-control" id="currency" name="currency"
+                                                        required
                                                         value="<?= htmlspecialchars($env_data['CURRENCY'] ?? '') ?>">
                                                 </div>
                                                 <div class="form-group col-md-4">
                                                     <label for="phone_no"><?php echo $translations["fno"]; ?>:</label>
                                                     <input type="tel" class="form-control" id="phone_no" name="phone_no"
+                                                        required
                                                         value="<?= htmlspecialchars($env_data['PHONE_NO'] ?? '') ?>">
                                                 </div>
                                                 <div class="form-group col-md-4">
-                                                    <label for="gkey"><?php echo $translations["googletrakckey"]; ?>:</label>
+                                                    <label
+                                                        for="gkey"><?php echo $translations["googletrakckey"]; ?>:</label>
                                                     <input type="text" class="form-control" id="gkey" name="gkey"
                                                         value="<?= htmlspecialchars($env_data['GOOGLE_KEY'] ?? '') ?>">
                                                     <small><?php echo $translations["googlekeyonly"]; ?></small>
@@ -485,16 +514,18 @@ $conn->close();
                                             <div class="form-row">
                                                 <div class="form-group col-sm-12">
                                                     <label for="about"><?php echo $translations["aboutdesc"]; ?>:</label>
-                                                    <textarea class="form-control" id="about" name="about" rows="3"><?= htmlspecialchars($env_data['ABOUT'] ?? '') ?></textarea>
+                                                    <textarea class="form-control" id="about" name="about" required
+                                                        minlength="50"
+                                                        rows="3"><?= htmlspecialchars($env_data['ABOUT'] ?? '') ?></textarea>
                                                 </div>
                                             </div>
 
                                         </div>
-                                        <button type="submit"
-                                            class="btn btn-primary"><i class="bi bi-save"></i> <?php echo $translations["save"]; ?></button>
+                                        <button type="submit" class="btn btn-primary"><i class="bi bi-save"></i>
+                                            <?php echo $translations["save"]; ?></button>
 
                                     </form>
-                                <?php
+                                    <?php
                                 } else {
                                     echo $translations["dont-access"];
                                 }
@@ -507,7 +538,7 @@ $conn->close();
                     <div class="col">
                         <?php
                         if ($is_boss == 1) {
-                        ?>
+                            ?>
                             <div class="col-md-4">
                                 <div class="card shadow">
                                     <div class="card-header">
@@ -527,7 +558,8 @@ $conn->close();
                                         <div class="row text-center">
                                             <div class="col">
                                                 <img class="img img-fluid" width="150px"
-                                                    src="../../../assets/img/brand/logo.png?<?php echo filemtime("../../../assets/img/brand/logo.png"); ?>" alt="Logo Preview">
+                                                    src="../../../assets/img/brand/logo.png?<?php echo filemtime("../../../assets/img/brand/logo.png"); ?>"
+                                                    alt="Logo Preview">
                                             </div>
                                         </div>
                                     </div>
@@ -552,7 +584,8 @@ $conn->close();
                                         <div class="row text-center">
                                             <div class="col">
                                                 <img class="img img-fluid" width="150px"
-                                                    src="../../../assets/img/brand/background.png?<?php echo filemtime("../../../assets/img/brand/background.png"); ?>" alt="Background Preview">
+                                                    src="../../../assets/img/brand/background.png?<?php echo filemtime("../../../assets/img/brand/background.png"); ?>"
+                                                    alt="Background Preview">
                                             </div>
                                         </div>
                                     </div>
@@ -577,13 +610,14 @@ $conn->close();
                                         <div class="row text-center">
                                             <div class="col">
                                                 <img class="img img-fluid" width="150px"
-                                                    src="../../../assets/img/brand/favicon.png?<?php echo filemtime("../../../assets/img/brand/favicon.png"); ?>" alt="Favicon Preview">
+                                                    src="../../../assets/img/brand/favicon.png?<?php echo filemtime("../../../assets/img/brand/favicon.png"); ?>"
+                                                    alt="Favicon Preview">
                                             </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
-                        <?php
+                            <?php
                         } else {
                             echo $translations["dont-access"];
                         }
@@ -596,18 +630,36 @@ $conn->close();
         </div>
     </div>
 
-    <div class="modal fade" id="logoutModal" tabindex="-1" role="dialog" aria-labelledby="logoutModalLabel"
-        aria-hidden="true">
-        <div class="modal-dialog" role="document">
-            <div class="modal-content">
-                <div class="modal-body">
-                    <p><?php echo $translations["exit-modal"]; ?></p>
-                </div>
-                <div class="modal-footer">
-                    <a type="button" class="btn btn-secondary"
-                        data-dismiss="modal"><?php echo $translations["not-yet"]; ?></a>
-                    <a href="../../logout.php" type="button"
-                        class="btn btn-danger"><?php echo $translations["confirm"]; ?></a>
+    <div class="modal fade" id="logoutModal" tabindex="-1" role="dialog">
+        <div class="modal-dialog" style="margin-top: 100px;">
+            <div class="modal-content" style="border: none; box-shadow: 0 0 40px rgba(0,0,0,.2);">
+                <div class="modal-body text-center" style="padding: 40px;">
+
+                    <div style="margin-bottom: 25px;">
+                        <div style="width: 80px; height: 80px; margin: 0 auto;
+                                background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+                                border-radius: 50%;
+                                display: flex; align-items: center; justify-content: center;">
+                            <i class="bi bi-box-arrow-right" style="color: #fff; font-size: 40px;"></i>
+                        </div>
+                    </div>
+
+                    <h4 style="font-weight: bold; margin-bottom: 15px;">
+                        <p><?php echo $translations["exit-modal"]; ?></p>
+                    </h4>
+
+                    <div class="text-center">
+                        <a type="button" class="btn btn-default" data-dismiss="modal"
+                            style="padding: 8px 25px; margin-right: 10px;">
+                            <i class="bi bi-x-circle" style="margin-right: 5px;"></i>
+                            <?php echo $translations["not-yet"]; ?>
+                        </a>
+
+                        <a href="../../logout.php" type="button" class="btn btn-danger" style="padding: 8px 25px;">
+                            <i class="bi bi-check-circle" style="margin-right: 5px;"></i>
+                            <?php echo $translations["confirm"]; ?>
+                        </a>
+                    </div>
                 </div>
             </div>
         </div>

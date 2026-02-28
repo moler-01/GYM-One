@@ -6,7 +6,7 @@
 
 body{
     background-color: var(--secondary-color);
-    color: whitesmoke;
+    color: #f1f1f1;
 }
 
 nav.navbar,.nav-link{
@@ -23,11 +23,11 @@ nav.navbar,.nav-link{
 }
 
 .footer{
-    color: whitesmoke;
+    color: #f1f1f1;
 }
 a{
     text-decoration: none;
-    color: whitesmoke;
+    color: #f1f1f1;
     font-weight: bold;
 }
 i:hover,i:active{
@@ -52,11 +52,11 @@ i:hover,i:active{
 }
 
 .custom-toggler .navbar-toggler-icon {
-    background-image: url("data:image/svg+xml;charset=UTF8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3E%3Cpath stroke='whitesmoke' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3E%3C/svg%3E");
+    background-image: url("data:image/svg+xml;charset=UTF8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3E%3Cpath stroke='#f1f1f1' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3E%3C/svg%3E");
 }
 
 #bussinessnameh2{
-    color: whitesmoke !important;
+    color: #f1f1f1 !important;
 }
 
 .svg,.bi{

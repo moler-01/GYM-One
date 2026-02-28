@@ -287,14 +287,19 @@ foreach ($data as $item) {
             </div>
             <div class="collapse navbar-collapse" id="myNavbar">
                 <ul class="nav navbar-nav">
-                    <li class="active"><a href="#"><i class="bi bi-speedometer"></i> <?php echo $translations["mainpage"]; ?></a></li>
+                    <li class="active"><a href="#"><i class="bi bi-speedometer"></i>
+                            <?php echo $translations["mainpage"]; ?></a></li>
                     <li><a href="../users"><i class="bi bi-people"></i> <?php echo $translations["users"]; ?></a></li>
-                    <li><a href="../statistics"><i class="bi bi-bar-chart"></i> <?php echo $translations["statspage"]; ?></a></li>
-                    <li><a href="../boss/sell"><i class="bi bi-shop"></i> <?php echo $translations["sellpage"]; ?></a></li>
-                    <li><a href="../invoices"><i class="bi bi-receipt"></i> <?php echo $translations["invoicepage"]; ?></a></li>
+                    <li><a href="../statistics"><i class="bi bi-bar-chart"></i>
+                            <?php echo $translations["statspage"]; ?></a></li>
+                    <li><a href="../boss/sell"><i class="bi bi-shop"></i> <?php echo $translations["sellpage"]; ?></a>
+                    </li>
+                    <li><a href="../invoices"><i class="bi bi-receipt"></i>
+                            <?php echo $translations["invoicepage"]; ?></a></li>
                     <?php if ($is_boss === 1) { ?>
                         <li class="dropdown">
-                            <a class="dropdown-toggle" data-toggle="dropdown" href="#"><i class="bi bi-gear"></i> <?php echo $translations["settings"]; ?> <span class="caret"></span></a>
+                            <a class="dropdown-toggle" data-toggle="dropdown" href="#"><i class="bi bi-gear"></i>
+                                <?php echo $translations["settings"]; ?> <span class="caret"></span></a>
                             <ul class="dropdown-menu">
                                 <li><a href="../boss/mainsettings"><?php echo $translations["businesspage"]; ?></a></li>
                                 <li><a href="../boss/workers"><?php echo $translations["workers"]; ?></a></li>
@@ -306,17 +311,22 @@ foreach ($data as $item) {
                             </ul>
                         </li>
                     <?php } ?>
-                    <li><a href="../shop/tickets"><i class="bi bi-ticket"></i> <?php echo $translations["ticketspage"]; ?></a></li>
-                    <li><a href="../trainers/timetable"><i class="bi bi-calendar-event"></i> <?php echo $translations["timetable"]; ?></a></li>
-                    <li><a href="../trainers/personal"><i class="bi bi-award"></i> <?php echo $translations["trainers"]; ?></a></li>
+                    <li><a href="../shop/tickets"><i class="bi bi-ticket"></i>
+                            <?php echo $translations["ticketspage"]; ?></a></li>
+                    <li><a href="../trainers/timetable"><i class="bi bi-calendar-event"></i>
+                            <?php echo $translations["timetable"]; ?></a></li>
+                    <li><a href="../trainers/personal"><i class="bi bi-award"></i>
+                            <?php echo $translations["trainers"]; ?></a></li>
                     <?php if ($is_boss === 1) { ?>
-                        <li><a href="../updater"><i class="bi bi-cloud-download"></i> <?php echo $translations["updatepage"]; ?>
-                                <?php if ($is_new_version_available) : ?>
+                        <li><a href="../updater"><i class="bi bi-cloud-download"></i>
+                                <?php echo $translations["updatepage"]; ?>
+                                <?php if ($is_new_version_available): ?>
                                     <span class="badge badge-warning"><i class="bi bi-exclamation-circle"></i></span>
                                 <?php endif; ?>
                             </a></li>
                     <?php } ?>
-                    <li><a href="../log"><i class="bi bi-clock-history"></i> <?php echo $translations["logpage"]; ?></a></li>
+                    <li><a href="../log"><i class="bi bi-clock-history"></i> <?php echo $translations["logpage"]; ?></a>
+                    </li>
                 </ul>
             </div>
         </div>
@@ -356,7 +366,7 @@ foreach ($data as $item) {
                     </li>
                     <?php
                     if ($is_boss === 1) {
-                    ?>
+                        ?>
                         <li class="sidebar-header">
                             <?php echo $translations["settings"]; ?>
                         </li>
@@ -402,7 +412,7 @@ foreach ($data as $item) {
                                 <span><?php echo $translations["rulepage"]; ?></span>
                             </a>
                         </li>
-                    <?php
+                        <?php
                     }
                     ?>
                     <li class="sidebar-header">
@@ -433,19 +443,19 @@ foreach ($data as $item) {
                     <li class="sidebar-header"><?php echo $translations["other-header"]; ?></li>
                     <?php
                     if ($is_boss === 1) {
-                    ?>
+                        ?>
                         <li class="sidebar-item">
                             <a class="sidebar-ling" href="../updater">
                                 <i class="bi bi-cloud-download"></i>
                                 <span><?php echo $translations["updatepage"]; ?></span>
-                                <?php if ($is_new_version_available) : ?>
+                                <?php if ($is_new_version_available): ?>
                                     <span class="sidebar-badge badge">
                                         <i class="bi bi-exclamation-circle"></i>
                                     </span>
                                 <?php endif; ?>
                             </a>
                         </li>
-                    <?php
+                        <?php
                     }
                     ?>
                     <li class="sidebar-item">
@@ -459,12 +469,14 @@ foreach ($data as $item) {
             <br>
             <div class="col-sm-10">
                 <div class="d-none topnav d-sm-inline-block">
-                    <a href="https://gymoneglobal.com/discord" class="btn btn-primary mx-1" target="_blank" rel="noopener noreferrer">
+                    <a href="https://gymoneglobal.com/discord" class="btn btn-primary mx-1" target="_blank"
+                        rel="noopener noreferrer">
                         <i class="bi bi-question-circle"></i>
                         <?php echo $translations["support"]; ?>
                     </a>
 
-                    <a href="https://gymoneglobal.com/docs" class="btn btn-danger" target="_blank" rel="noopener noreferrer">
+                    <a href="https://gymoneglobal.com/docs" class="btn btn-danger" target="_blank"
+                        rel="noopener noreferrer">
                         <i class="bi bi-journals"></i>
                         <?php echo $translations["docs"]; ?>
                     </a>
@@ -475,7 +487,7 @@ foreach ($data as $item) {
                 </div>
                 <?php
                 if ($is_boss == 1 && $is_new_version_available) {
-                ?>
+                    ?>
                     <div class="row">
                         <div class="col-sm-12">
                             <div class="alert alert-danger">
@@ -483,7 +495,7 @@ foreach ($data as $item) {
                             </div>
                         </div>
                     </div>
-                <?php
+                    <?php
                 }
                 ?>
                 <div class="row">
@@ -536,7 +548,8 @@ foreach ($data as $item) {
                     <div class="col-sm-3">
                         <div class="card">
                             <div class="card-body">
-                                <h5 class="card-title mb-0 fw-semibold"><?php echo $translations["userlogginer"]; ?></h5>
+                                <h5 class="card-title mb-0 fw-semibold"><?php echo $translations["userlogginer"]; ?>
+                                </h5>
                                 <div class="text-center">
                                     <a data-toggle="modal" data-target="#Logginer_MODAL" class="btn mt-3 btn-success">
                                         <h4><?= $translations["logginer"]; ?></h4>
@@ -558,32 +571,38 @@ foreach ($data as $item) {
                         </div>
                     </div>
                     <div class="col-sm-6">
-                        <div class="card">
-                            <div class="card-body">
-                                <p><?php echo $translations["dayopendayclose"]; ?></p>
-                                <div class="d-flex justify-content-between text-center">
-                                    <!-- <?php if ($message): ?>
-                                        <div class="alert alert-info" role="alert">
-                                            <?php echo $message; ?>
-                                        </div>
-                                    <?php endif; ?>
-                                    <button type="button" class="btn btn-success mt-3" data-toggle="modal" data-target="#openModal">
-                                        <?php echo $translations["dayopen"]; ?>
-                                    </button>
-                                    <a href="" class="btn btn-danger"><?php echo $translations["dayclose"]; ?></a> -->
+                        <div class="card mb-4">
+                            <h5 class="fw-bold mb-3"><?php echo $translations["capacitytext"]; ?></h5>
+                            <div class="text-center py-3">
+                                <h1 class="display-4 fw-bold text-primary mb-2">
+                                    <?php echo number_format($capacityPercent, 0); ?>%
+                                </h1>
+                                <div class="progress" style="height: 10px;">
+                                    <div class="progress-bar-<?php echo $progresscolor; ?>" role="progressbar"
+                                        style="width: <?php echo number_format($capacityPercent, 2); ?>%"></div>
                                 </div>
+                                <p class="text-muted mt-3 mb-0"><?php echo $total_count; ?> / <?php echo $capacity; ?>
+                                    <?php echo $translations["users"]; ?>
+                                </p>
                             </div>
                         </div>
                         <div class="card bg-danger">
                             <div class="card-body">
                                 <p><?php echo $translations["emernumtext"]; ?></p>
                                 <div class="justify-content-between text-center">
-                                    <h2><?php echo $translations["ambulance"]; ?> <b class="text-danger"><?php echo $ambulanceNumbers; ?></b></h2>
-                                    <h2><?php echo $translations["fireresistor"]; ?> <b class="text-danger"><?php echo $fireNumbers; ?></b></h2>
-                                    <h2><?php echo $translations["police"]; ?> <b class="text-danger"><?php echo $policeNumbers; ?></b></h2>
+                                    <h2>🚑 <?php echo $translations["ambulance"]; ?> <b
+                                            class="text-danger"><?php echo $ambulanceNumbers; ?></b></h2>
+                                    <h2>🚒 <?php echo $translations["fireresistor"]; ?> <b
+                                            class="text-danger"><?php echo $fireNumbers; ?></b></h2>
+                                    <h2>👮 <?php echo $translations["police"]; ?> <b
+                                            class="text-danger"><?php echo $policeNumbers; ?></b></h2>
                                 </div>
                             </div>
                         </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-sm-12">
                         <div class="card">
                             <div class="card-body">
                                 <table class="table table-dark table-bordered text-center">
@@ -627,63 +646,17 @@ foreach ($data as $item) {
                         </div>
                     </div>
                 </div>
-                <div class="row justify-content-between text-center">
-                    <div class="col-sm-2">
-                        <div class="card">
-                            <p><?= $translations["capacitytext"]; ?></p>
-                            <div class="card-body">
-                                <div class="progress">
-                                    <div class="progress-bar-<?php echo $progresscolor; ?>" role="progressbar" style="width: <?php echo number_format($capacityPercent, 2); ?>%;" aria-valuenow="<?php echo number_format($capacityPercent, 2); ?>" aria-valuemin="0" aria-valuemax="100"><?php echo number_format($capacityPercent, 0); ?>%</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <style>
-                        :root {
-                            --main-color: #0950DC;
-                        }
-
-                        .support-card {
-                            border-color: var(--main-color);
-                            animation: pulse 2.5s infinite;
-                        }
-
-                        @keyframes pulse {
-                            0% {
-                                box-shadow: 0 0 10px rgba(9, 80, 220, 0.4);
-                            }
-
-                            50% {
-                                box-shadow: 0 0 20px rgba(9, 80, 220, 0.9);
-                            }
-
-                            100% {
-                                box-shadow: 0 0 10px rgba(9, 80, 220, 0.4);
-                            }
-                        }
-
-                        .btn-github {
-                            background-color: #24292e;
-                            color: white;
-                            border: none;
-                        }
-
-                        .btn-github:hover {
-                            background-color: #444c56;
-                        }
-                    </style>
-                    <div class="col-sm-4">
-                        <div class="card support-card">
-                            <div class="card-header">
-                                <h3 class="card-title"><strong>💙 <?= $translations["gymonesupport_header"]; ?></strong></h3>
-                            </div>
-                            <div class="card-body">
-                                <p><?= $translations["gymonesupport_text_one"]; ?></p>
-                                <p><?= $translations["gymonesupport_text_two"]; ?></p>
-                                <a href="https://github.com/sponsors/mayerbalintdev" target="_blank" class="btn btn-github btn-lg">
-                                    💚 <?= $translations["sponsor-btn"]; ?>
-                                </a>
-                            </div>
+                <div class="row">
+                    <div class="col-sm-12">
+                        <div class="card text-center support-card">
+                            <h3 class="card-title"><strong>💙 <?= $translations["gymonesupport_header"]; ?></strong>
+                            </h3>
+                            <p class="text-muted mb-4"><?= $translations["gymonesupport_text_one"]; ?></p>
+                            <p class="text-muted mb-4"><?= $translations["gymonesupport_text_two"]; ?></p>
+                            <a href="https://github.com/sponsors/mayerbalintdev" target="_blank"
+                                class="btn btn-github btn-lg">
+                                💚 <?= $translations["sponsor-btn"]; ?>
+                            </a>
                         </div>
                     </div>
                 </div>
@@ -692,15 +665,37 @@ foreach ($data as $item) {
     </div>
 
     <!-- EXIT MODAL -->
-    <div class="modal fade" id="logoutModal" tabindex="-1" role="dialog" aria-labelledby="logoutModalLabel" aria-hidden="true">
-        <div class="modal-dialog" role="document">
-            <div class="modal-content">
-                <div class="modal-body">
-                    <p><?php echo $translations["exit-modal"]; ?></p>
-                    <div class="footer text-center">
-                        <a type="button" class="btn btn-secondary" data-dismiss="modal"><?php echo $translations["not-yet"]; ?></a>
-                        <a href="../logout.php" type="button" class="btn btn-danger"><?php echo $translations["confirm"]; ?></a>
+    <div class="modal fade" id="logoutModal" tabindex="-1" role="dialog">
+        <div class="modal-dialog" style="margin-top: 100px;">
+            <div class="modal-content" style="border: none; box-shadow: 0 0 40px rgba(0,0,0,.2);">
+                <div class="modal-body text-center" style="padding: 40px;">
+
+                    <div style="margin-bottom: 25px;">
+                        <div style="width: 80px; height: 80px; margin: 0 auto;
+                                background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+                                border-radius: 50%;
+                                display: flex; align-items: center; justify-content: center;">
+                            <i class="bi bi-box-arrow-right" style="color: #fff; font-size: 40px;"></i>
+                        </div>
                     </div>
+
+                    <h4 style="font-weight: bold; margin-bottom: 15px;">
+                        <p><?php echo $translations["exit-modal"]; ?></p>
+                    </h4>
+
+                    <div class="text-center">
+                        <a type="button" class="btn btn-default" data-dismiss="modal"
+                            style="padding: 8px 25px; margin-right: 10px;">
+                            <i class="bi bi-x-circle" style="margin-right: 5px;"></i>
+                            <?php echo $translations["not-yet"]; ?>
+                        </a>
+
+                        <a href="../logout.php" type="button" class="btn btn-danger" style="padding: 8px 25px;">
+                            <i class="bi bi-check-circle" style="margin-right: 5px;"></i>
+                            <?php echo $translations["confirm"]; ?>
+                        </a>
+                    </div>
+
                 </div>
             </div>
         </div>
@@ -720,14 +715,16 @@ foreach ($data as $item) {
                         </div>
                     </div>
                     <div class="footer text-center">
-                        <button type="button" class="btn btn-secondary" data-dismiss="modal"><?php echo $translations["next"]; ?></button>
+                        <button type="button" class="btn btn-secondary"
+                            data-dismiss="modal"><?php echo $translations["next"]; ?></button>
                     </div>
                 </div>
             </div>
         </div>
     </div>
     <!-- BELÉPTETŐ MODAL -->
-    <div class="modal fade" id="Logginer_MODAL" tabindex="-1" role="dialog" aria-labelledby="LogginerModalLabel" aria-hidden="true">
+    <div class="modal fade" id="Logginer_MODAL" tabindex="-1" role="dialog" aria-labelledby="LogginerModalLabel"
+        aria-hidden="true">
         <div class="modal-dialog" role="document">
             <div class="modal-content">
                 <div class="modal-header">
@@ -748,26 +745,31 @@ foreach ($data as $item) {
                         </div>
                         <h1><?php echo $translations["or"]; ?></h1>
                         <form class="form-inline my-2 my-lg-0">
-                            <input id="search" class="form-control mr-sm-2" type="search" placeholder="<?php echo $translations["name-search"]; ?> " aria-label="Search">
+                            <input id="search" class="form-control mr-sm-2" type="search"
+                                placeholder="<?php echo $translations["name-search"]; ?> " aria-label="Search">
                         </form>
                         <div id="results" class="mt-4"></div>
                         <input hidden id="qrcodeContent">
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <a type="button" id="continueButton" class="btn btn-primary" style="display: none;"><?php echo $translations["next"]; ?></a>
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal"><?php echo $translations["close"]; ?></button>
+                    <a type="button" id="continueButton" class="btn btn-primary"
+                        style="display: none;"><?php echo $translations["next"]; ?></a>
+                    <button type="button" class="btn btn-secondary"
+                        data-dismiss="modal"><?php echo $translations["close"]; ?></button>
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="modal fade" id="UserDetails_MODAL" tabindex="-1" role="dialog" aria-labelledby="userDetailsLabel" aria-hidden="true">
+    <div class="modal fade" id="UserDetails_MODAL" tabindex="-1" role="dialog" aria-labelledby="userDetailsLabel"
+        aria-hidden="true">
         <div class="modal-dialog" role="document">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title" id="userDetailsLabel"><?= $translations["userinfo"]; ?></h5>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="<?php echo $translations["close"]; ?>">
+                    <button type="button" class="close" data-dismiss="modal"
+                        aria-label="<?php echo $translations["close"]; ?>">
                         <span aria-hidden="true">&times;</span>
                     </button>
                 </div>
@@ -775,26 +777,31 @@ foreach ($data as $item) {
                     <div id="userDetails"></div>
                 </div>
                 <div class="modal-footer">
-                    <button id="nextButton" class="btn btn-primary" disabled><?php echo $translations["next"]; ?></button>
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal"><?php echo $translations["close"]; ?></button>
+                    <button id="nextButton" class="btn btn-primary"
+                        disabled><?php echo $translations["next"]; ?></button>
+                    <button type="button" class="btn btn-secondary"
+                        data-dismiss="modal"><?php echo $translations["close"]; ?></button>
                 </div>
             </div>
         </div>
     </div>
 
     <!-- Ticket Details Modal -->
-    <div class="modal fade" id="TicketDetails_MODAL" tabindex="-1" role="dialog" aria-labelledby="TicketDetailsModalLabel" aria-hidden="true">
+    <div class="modal fade" id="TicketDetails_MODAL" tabindex="-1" role="dialog"
+        aria-labelledby="TicketDetailsModalLabel" aria-hidden="true">
         <div class="modal-dialog" role="document">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="TicketDetailsModalLabel"><?php echo $translations["ticketinfomodal"]; ?></h5>
+                    <h5 class="modal-title" id="TicketDetailsModalLabel"><?php echo $translations["ticketinfomodal"]; ?>
+                    </h5>
                     <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                         <span aria-hidden="true">&times;</span>
                     </button>
                 </div>
                 <div class="modal-body" id="ticketDetails"></div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal" onclick="window.location.reload();">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal"
+                        onclick="window.location.reload();">
                         <?php echo $translations["close"]; ?>
                     </button>
                 </div>
@@ -804,7 +811,8 @@ foreach ($data as $item) {
 
     <!-- DAYOPEN MODAL -->
 
-    <div class="modal fade" id="openModal" tabindex="-1" role="dialog" aria-labelledby="openModalLabel" aria-hidden="true">
+    <div class="modal fade" id="openModal" tabindex="-1" role="dialog" aria-labelledby="openModalLabel"
+        aria-hidden="true">
         <div class="modal-dialog" role="document">
             <div class="modal-content">
                 <div class="modal-header">
@@ -817,7 +825,8 @@ foreach ($data as $item) {
                     <div class="modal-body">
                         <div class="form-group">
                             <label for="opening_amount">Kezdő összeg (Ft)</label>
-                            <input type="number" name="opening_amount" step="0.01" class="form-control" required placeholder="Kezdő összeg (Ft)">
+                            <input type="number" name="opening_amount" step="0.01" class="form-control" required
+                                placeholder="Kezdő összeg (Ft)">
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -832,8 +841,8 @@ foreach ($data as $item) {
     <!-- SCRIPTS! -->
     <script src="https://unpkg.com/@zxing/library@latest"></script>
     <script>
-        $(document).ready(function() {
-            $(document).on("click", ".loginUser", function(e) {
+        $(document).ready(function () {
+            $(document).on("click", ".loginUser", function (e) {
                 e.preventDefault();
 
                 const userId = $(this).data("userid");
@@ -846,12 +855,12 @@ foreach ($data as $item) {
                 video.classList.remove('scanned', 'error');
 
                 fetch('process.php', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/x-www-form-urlencoded'
-                        },
-                        body: `qrcode=${encodeURIComponent(userId)}`
-                    })
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    },
+                    body: `qrcode=${encodeURIComponent(userId)}`
+                })
                     .then(response => response.json())
                     .then(data => {
                         if (data.success) {
@@ -904,7 +913,7 @@ foreach ($data as $item) {
             });
 
 
-            $("#search").on("input", function() {
+            $("#search").on("input", function () {
                 var query = $(this).val();
                 if (query.length > 2) {
                     $.ajax({
@@ -913,7 +922,7 @@ foreach ($data as $item) {
                         data: {
                             search: query
                         },
-                        success: function(data) {
+                        success: function (data) {
                             $("#results").html(data);
                         }
                     });
@@ -952,12 +961,12 @@ foreach ($data as $item) {
                         continueButton.style.display = 'inline';
 
                         fetch('process.php', {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/x-www-form-urlencoded'
-                                },
-                                body: `qrcode=${encodeURIComponent(qrCodeText)}`
-                            })
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/x-www-form-urlencoded'
+                            },
+                            body: `qrcode=${encodeURIComponent(qrCodeText)}`
+                        })
                             .then(response => response.json())
                             .then(data => {
                                 if (data.success) {
@@ -1019,7 +1028,7 @@ foreach ($data as $item) {
                 }
             }
 
-            $('#continueButton').on('click', function() {
+            $('#continueButton').on('click', function () {
                 $('#Logginer_MODAL').modal('hide');
                 stopScanning();
 
@@ -1032,7 +1041,7 @@ foreach ($data as $item) {
                 $('#UserDetails_MODAL').modal('show');
             });
 
-            $('#nextButton').on('click', function() {
+            $('#nextButton').on('click', function () {
                 if (userData.ticket_status === translations.valid) {
                     $('#UserDetails_MODAL').modal('hide');
                     $('#TicketDetails_MODAL').modal('show');
@@ -1072,7 +1081,7 @@ foreach ($data as $item) {
 
 
     <script>
-        document.addEventListener("DOMContentLoaded", function() {
+        document.addEventListener("DOMContentLoaded", function () {
             let seriesData = Object.values(<?php echo json_encode($dataRegistrations); ?>);
 
             var options = {
@@ -1098,7 +1107,7 @@ foreach ($data as $item) {
                     tickAmount: Math.max(...seriesData),
                     min: 0,
                     labels: {
-                        formatter: function(value) {
+                        formatter: function (value) {
                             return Math.floor(value);
                         }
                     }
@@ -1112,7 +1121,7 @@ foreach ($data as $item) {
 
 
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             const now = new Date();
             const hours = now.getHours();
             const minutes = now.getMinutes();
@@ -1138,7 +1147,9 @@ foreach ($data as $item) {
         });
     </script>
     <script src="../../assets/js/date-time.js"></script>
-    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"
+        integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa"
+        crossorigin="anonymous"></script>
 </body>
 
 </html>

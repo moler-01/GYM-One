@@ -2,7 +2,7 @@
 session_start();
 
 if (!isset($_SESSION['adminuser'])) {
-    header("Location: ../");
+    header("Location: ../../dashboard");
     exit();
 }
 
@@ -39,7 +39,6 @@ $business_name = $env_data['BUSINESS_NAME'] ?? '';
 $lang_code = $env_data['LANG_CODE'] ?? '';
 $version = $env_data["APP_VERSION"] ?? '';
 $capacity = $env_data["CAPACITY"] ?? '';
-$currency = $env_data['CURRENCY'] ?? '';
 
 $lang = $lang_code;
 
@@ -109,15 +108,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     }
 }
 
-$sql = "SELECT * FROM trainers";
-$result = $conn->query($sql);
-
-
 $sql = "SELECT is_boss FROM workers WHERE userid = ?";
 $stmt = $conn->prepare($sql);
 $stmt->bind_param("i", $userid);
 $stmt->execute();
 $stmt->store_result();
+
+
 
 $is_boss = null;
 
@@ -137,37 +134,61 @@ curl_close($ch);
 
 $current_version = $version;
 
+$alerts_html = '';
+
 $is_new_version_available = version_compare($latest_version, $current_version) > 0;
 
-if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    $name = $_POST['name'];
-    $description = $_POST['description'];
-    $price_1hour = $_POST['price_1hour'];
-    $price_10sessions = $_POST['price_10sessions'];
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_event'])) {
+    $event_name = $conn->real_escape_string($_POST['event_name']);
+    $start_time =  $conn->real_escape_string($_POST['start_time']);
+    $end_time =  $conn->real_escape_string($_POST['end_time']);
+    $day_of_week =  $conn->real_escape_string($_POST['day_of_week']);
+    $color =  $conn->real_escape_string($_POST['color']);
 
-    $sql = "INSERT INTO trainers (name, description, price_1hour, price_10sessions) 
-            VALUES ('$name', '$description', '$price_1hour', '$price_10sessions')";
+    $sql = "INSERT INTO timetable (event_name, start_time, end_time, day_of_week, color) VALUES (?, ?, ?, ?, ?)";
+    $stmt =  $conn->prepare($sql);
+    $stmt->bind_param('sssss', $event_name, $start_time, $end_time, $day_of_week, $color);
+    $stmt->execute();
+    $stmt->close();
+    $alerts_html .= "<div class='alert alert-success'>{$translations["eventadded"]}</div>";
+    header("Refresh:1");
+}
 
-    if ($conn->query($sql) === TRUE) {
-        $trainer_id = $conn->insert_id;
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['delete_event'])) {
+    $event_name =  $conn->real_escape_string($_POST['event_name']);
 
-        $target_dir = "../../../assets/img/trainers/";
-        $image_extension = pathinfo($_FILES["image"]["name"], PATHINFO_EXTENSION);
-        $target_file = $target_dir . "trainer_" . $trainer_id . "." . $image_extension;
+    $sql = "DELETE FROM timetable WHERE event_name = ?";
+    $stmt =  $conn->prepare($sql);
+    $stmt->bind_param('s', $event_name);
+    $stmt->execute();
+    $stmt->close();
+    $alerts_html .= "<div class='alert alert-warning'>{$translations["eventdeleted"]}</div>";
+    header("Refresh:1");
+}
 
-        if (move_uploaded_file($_FILES["image"]["tmp_name"], $target_file)) {
-            $sql = "UPDATE trainers SET image='$target_file' WHERE id='$trainer_id'";
-            if ($conn->query($sql) === TRUE) {
-                echo "New trainer added successfully!";
-            } else {
-                echo "Error updating record: " . $conn->error;
-            }
-        } else {
-            echo "Error uploading file.";
-        }
-    } else {
-        echo "Error: " . $sql . "<br>" . $conn->error;
-    }
+$days_of_week = [$translations["Mon"], $translations["Tue"], $translations["Wed"], $translations["Thu"], $translations["Fri"], $translations["Sat"], $translations["Sun"]];
+$timetable = [];
+foreach ($days_of_week as $day) {
+    $sql = "SELECT * FROM timetable WHERE day_of_week = ? ORDER BY start_time";
+    $stmt =  $conn->prepare($sql);
+    $stmt->bind_param('s', $day);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $timetable[$day] = $result->fetch_all(MYSQLI_ASSOC);
+    $stmt->close();
+}
+
+$sql = "SELECT event_name FROM timetable ORDER BY event_name";
+$result =  $conn->query($sql);
+$allEvents = $result->fetch_all(MYSQLI_ASSOC);
+
+$hours = [];
+$start = strtotime('06:00');
+$end = strtotime('21:00');
+while ($start < $end) {
+    $next = strtotime('+1 hour', $start);
+    $hours[] = date('H:i', $start) . '-' . date('H:i', $next);
+    $start = $next;
 }
 
 $conn->close();
@@ -179,8 +200,8 @@ $conn->close();
 <head>
     <meta charset="UTF-8">
     <title><?php echo $translations["dashboard"]; ?></title>
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link rel="stylesheet" href="../../../assets/css/dashboard.css">
@@ -188,16 +209,6 @@ $conn->close();
 </head>
 <!-- ApexCharts -->
 <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
-<script src="../../../assets/js/tinymce/js/tinymce/tinymce.min.js" referrerpolicy="origin"></script>
-<script>
-    tinymce.init({
-        selector: '#editor',
-        toolbar: 'undo redo | bold italic underline strikethrough | fontsizeselect formatselect | alignleft aligncenter alignright alignjustify | outdent indent |  numlist bullist checklist | forecolor backcolor casechange permanentpen formatpainter removeformat | pagebreak | charmap emoticons | fullscreen  preview save | insertfile image media pageembed template link anchor codesample | a11ycheck ltr rtl',
-        height: 500,
-        menubar: 'file edit view insert format tools table help',
-        content_style: 'body { font-family:Helvetica,Arial,sans-serif; font-size:14px }'
-    });
-</script>
 
 <body>
     <nav class="navbar navbar-inverse visible-xs">
@@ -212,20 +223,14 @@ $conn->close();
             </div>
             <div class="collapse navbar-collapse" id="myNavbar">
                 <ul class="nav navbar-nav">
-                    <li><a href="../../dashboard"><i class="bi bi-speedometer"></i>
-                            <?php echo $translations["mainpage"]; ?></a></li>
-                    <li><a href="../../users"><i class="bi bi-people"></i> <?php echo $translations["users"]; ?></a>
-                    </li>
-                    <li><a href="../../statistics"><i class="bi bi-bar-chart"></i>
-                            <?php echo $translations["statspage"]; ?></a></li>
-                    <li><a href="../../boss/sell"><i class="bi bi-shop"></i>
-                            <?php echo $translations["sellpage"]; ?></a></li>
-                    <li><a href="../../invoices"><i class="bi bi-receipt"></i>
-                            <?php echo $translations["invoicepage"]; ?></a></li>
+                    <li><a href="../../dashboard"><i class="bi bi-speedometer"></i> <?php echo $translations["mainpage"]; ?></a></li>
+                    <li><a href="../../users"><i class="bi bi-people"></i> <?php echo $translations["users"]; ?></a></li>
+                    <li><a href="../../statistics"><i class="bi bi-bar-chart"></i> <?php echo $translations["statspage"]; ?></a></li>
+                    <li><a href="../../boss/sell"><i class="bi bi-shop"></i> <?php echo $translations["sellpage"]; ?></a></li>
+                    <li><a href="../../invoices"><i class="bi bi-receipt"></i> <?php echo $translations["invoicepage"]; ?></a></li>
                     <?php if ($is_boss === 1) { ?>
                         <li class="dropdown">
-                            <a class="dropdown-toggle" data-toggle="dropdown" href="#"><i class="bi bi-gear"></i>
-                                <?php echo $translations["settings"]; ?> <span class="caret"></span></a>
+                            <a class="dropdown-toggle" data-toggle="dropdown" href="#"><i class="bi bi-gear"></i> <?php echo $translations["settings"]; ?> <span class="caret"></span></a>
                             <ul class="dropdown-menu">
                                 <li><a href="../../boss/mainsettings"><?php echo $translations["businesspage"]; ?></a></li>
                                 <li><a href="../../boss/workers"><?php echo $translations["workers"]; ?></a></li>
@@ -237,22 +242,17 @@ $conn->close();
                             </ul>
                         </li>
                     <?php } ?>
-                    <li><a href="../../shop/tickets"><i class="bi bi-ticket"></i>
-                            <?php echo $translations["ticketspage"]; ?></a></li>
-                    <li><a href="../../trainers/timetable"><i class="bi bi-calendar-event"></i>
-                            <?php echo $translations["timetable"]; ?></a></li>
-                    <li class="active"><a href="#"><i class="bi bi-award"></i>
-                            <?php echo $translations["trainers"]; ?></a></li>
+                    <li><a href="../../shop/tickets"><i class="bi bi-ticket"></i> <?php echo $translations["ticketspage"]; ?></a></li>
+                    <li class="active"><a href="#"><i class="bi bi-calendar-event"></i> <?php echo $translations["timetable"]; ?></a></li>
+                    <li><a href="../../trainers/personal"><i class="bi bi-award"></i> <?php echo $translations["trainers"]; ?></a></li>
                     <?php if ($is_boss === 1) { ?>
-                        <li><a href="../../updater"><i class="bi bi-cloud-download"></i>
-                                <?php echo $translations["updatepage"]; ?>
-                                <?php if ($is_new_version_available): ?>
+                        <li><a href="../../updater"><i class="bi bi-cloud-download"></i> <?php echo $translations["updatepage"]; ?>
+                                <?php if ($is_new_version_available) : ?>
                                     <span class="badge badge-warning"><i class="bi bi-exclamation-circle"></i></span>
                                 <?php endif; ?>
                             </a></li>
                     <?php } ?>
-                    <li><a href="../../log"><i class="bi bi-clock-history"></i>
-                            <?php echo $translations["logpage"]; ?></a></li>
+                    <li><a href="../../log"><i class="bi bi-clock-history"></i> <?php echo $translations["logpage"]; ?></a></li>
                 </ul>
             </div>
         </div>
@@ -291,7 +291,7 @@ $conn->close();
                     </li>
                     <?php
                     if ($is_boss === 1) {
-                        ?>
+                    ?>
                         <li class="sidebar-header">
                             <?php echo $translations["settings"]; ?>
                         </li>
@@ -337,7 +337,7 @@ $conn->close();
                                 <span><?php echo $translations["rulepage"]; ?></span>
                             </a>
                         </li>
-                        <?php
+                    <?php
                     }
                     ?>
                     <li class="sidebar-header">
@@ -350,7 +350,7 @@ $conn->close();
                         </a> -->
                     </li>
                     <li class="sidebar-item">
-                        <a class="sidebar-link" href="../../boss/sell">
+                        <a class="sidebar-link" href="../../shop/tickets">
                             <i class="bi bi-ticket"></i>
                             <span><?php echo $translations["ticketspage"]; ?></span>
                         </a>
@@ -358,14 +358,14 @@ $conn->close();
                     <li class="sidebar-header">
                         <?php echo $translations["trainersclass"]; ?>
                     </li>
-                    <li class="sidebar-item">
-                        <a class="sidebar-link" href="../../trainers/timetable">
+                    <li class="sidebar-item active">
+                        <a class="sidebar-link" href="#">
                             <i class="bi bi-calendar-event"></i>
                             <span><?php echo $translations["timetable"]; ?></span>
                         </a>
                     </li>
-                    <li class="sidebar-item active">
-                        <a class="sidebar-link" href="#">
+                    <li class="sidebar-item">
+                        <a class="sidebar-link" href="../../trainers/personal">
                             <i class="bi bi-award"></i>
                             <span><?php echo $translations["trainers"]; ?></span>
                         </a>
@@ -373,19 +373,19 @@ $conn->close();
                     <li class="sidebar-header"><?php echo $translations["other-header"]; ?></li>
                     <?php
                     if ($is_boss === 1) {
-                        ?>
+                    ?>
                         <li class="sidebar-item">
                             <a class="sidebar-ling" href="../../updater">
                                 <i class="bi bi-cloud-download"></i>
                                 <span><?php echo $translations["updatepage"]; ?></span>
-                                <?php if ($is_new_version_available): ?>
+                                <?php if ($is_new_version_available) : ?>
                                     <span class="sidebar-badge badge">
                                         <i class="bi bi-exclamation-circle"></i>
                                     </span>
                                 <?php endif; ?>
                             </a>
                         </li>
-                        <?php
+                    <?php
                     }
                     ?>
                     <li class="sidebar-item">
@@ -396,6 +396,7 @@ $conn->close();
                     </li>
                 </ul><br>
             </div>
+
             <br>
             <div class="col-sm-10">
                 <div class="d-none topnav d-sm-inline-block">
@@ -415,103 +416,182 @@ $conn->close();
                     </button>
                     <h5 id="clock" style="display: inline-block; margin-bottom: 0;"></h5>
                 </div>
-                <div class="row justify-content-center text-center">
-                    <div class="col-md-2">
-                        <div class="card shadow">
-                            <div class="card-body">
-                                <a href="add/" class="btn btn-success btn-lg"><i class="bi bi-plus-circle"></i>
-                                    <?php echo $translations["newtraineradd"]; ?></a>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="row justify-content-center">
-                    <div class="col-12">
+                <div class="row">
+                    <div class="col-sm-12">
                         <?php echo $alerts_html; ?>
                         <div class="card shadow">
                             <div class="card-body">
-                                <?php if ($is_boss == 1): ?>
-                                    <?php if ($result->num_rows > 0): ?>
-                                        <div class="row">
-                                            <?php while ($row = $result->fetch_assoc()): ?>
-                                                <div class="col-md-3">
-                                                    <div class="card mb-4 text-center">
-                                                        <img src="<?php echo '../../../assets/img/trainers/trainer_' . $row['id'] . '.png'; ?>"
-                                                            class="card-img-top img-fluid" alt="<?php echo $row['name']; ?>">
-                                                        <div class="card-body">
-                                                            <h5 class="card-title"><?php echo $row['name']; ?></h5>
-                                                            <p class="card-text"><?php echo nl2br($row['description']); ?></p>
-                                                            <p class="card-text"><strong><?php echo $translations["price"]; ?> (1
-                                                                    <?php echo $translations["hour"]; ?>):</strong>
-                                                                <?php echo $row['price_1hour']; ?>             <?php echo $currency; ?></p>
-                                                            <p class="card-text"><strong><?php echo $translations["price"]; ?> (10
-                                                                    <?php echo $translations["occasions"]; ?>):</strong>
-                                                                <?php echo $row['price_10sessions']; ?>             <?php echo $currency; ?></p>
-                                                            <a href="edit/?id=<?php echo $row['id']; ?>" class="btn btn-primary"><i
-                                                                    class="bi bi-pencil-square"></i>
-                                                                <?php echo $translations["editbtn"]; ?></a>
-                                                            <a href="delete/?id=<?php echo $row['id']; ?>" class="btn btn-danger"><i
-                                                                    class="bi bi-x-circle"></i>
-                                                                <?php echo $translations["delete"]; ?></a>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            <?php endwhile; ?>
-                                        </div>
-                                    <?php else: ?>
-                                        <div class="alert alert-warning"><?php echo $translations["notrainers"]; ?></div>
-                                    <?php endif; ?>
-                                <?php else: ?>
-                                    <div class="alert alert-danger"><?php echo $translations["dont-access"]; ?></div>
-                                <?php endif; ?>
+
+                                <?php
+                                if ($is_boss == 1) {
+                                ?>
+                                    <div class="table-responsive">
+                                        <table class="table table-bordered calendar-table">
+                                            <thead>
+                                                <tr>
+                                                    <th><?php echo $translations["time"]; ?></th>
+                                                    <?php foreach ($days_of_week as $day): ?>
+                                                        <th><?= htmlspecialchars($day) ?></th>
+                                                    <?php endforeach; ?>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <?php foreach ($hours as $hour): ?>
+                                                    <tr>
+                                                        <td class="time-cell"><?= htmlspecialchars($hour) ?></td>
+                                                        <?php foreach ($days_of_week as $day): ?>
+                                                            <td class="time-cell text-center">
+                                                                <?php
+                                                                [$currentHourStart, $currentHourEnd] = array_map('strtotime', explode('-', $hour));
+
+                                                                foreach ($timetable[$day] as $event) {
+                                                                    $eventStart = strtotime($event['start_time']);
+                                                                    $eventEnd = strtotime($event['end_time']);
+
+                                                                    if ($eventStart < $currentHourEnd && $eventEnd > $currentHourStart) {
+                                                                        $eventStyle = 'background-color: ' . htmlspecialchars($event['color']) . ';';
+                                                                        $eventText = htmlspecialchars($event['event_name']) . '<br> (' . date('H:i', $eventStart) . '-' . date('H:i', $eventEnd) . ')';
+
+                                                                        $eventStyle .= ($eventStart <= $currentHourStart && $eventEnd >= $currentHourEnd)
+                                                                            ? 'height: 100%;' : 'height: auto;';
+
+                                                                        if (($eventEnd - $eventStart) == 3600) {
+                                                                            $eventStyle .= 'height: 100%;';
+                                                                        }
+
+                                                                        echo '<div class="event" style="' . $eventStyle . '">' . $eventText . '</div>';
+                                                                    }
+                                                                }
+                                                                ?>
+                                                            </td>
+                                                        <?php endforeach; ?>
+                                                    </tr>
+                                                <?php endforeach; ?>
+                                            </tbody>
+                                        </table>
+                                    <?php
+                                } else {
+                                    echo $translations["dont-access"];
+                                }
+
+                                    ?>
+
+                                    </div>
                             </div>
+                        </div>
+                        <div class="col">
+                            <?php
+                            if ($is_boss == 1) {
+                            ?>
+                                <div class="col-md-6">
+                                    <div class="card shadow">
+                                        <div class="card-header">
+                                            <?php echo $translations["add-timetable-event"]; ?>
+                                        </div>
+                                        <div class="card-body">
+                                            <form action="" method="POST" class="mb-4">
+                                                <input type="hidden" name="add_event" value="1">
+                                                <div class="form-group">
+                                                    <label for="event_name"><?php echo $translations["eventname"]; ?></label>
+                                                    <input type="text" class="form-control" id="event_name" name="event_name" required>
+                                                </div>
+                                                <div class="form-group">
+                                                    <label for="start_time"><?php echo $translations["starttime"]; ?></label>
+                                                    <input type="time" class="form-control" id="start_time" name="start_time" required>
+                                                </div>
+                                                <div class="form-group">
+                                                    <label for="end_time"><?php echo $translations["endtime"]; ?></label>
+                                                    <input type="time" class="form-control" id="end_time" name="end_time" required>
+                                                </div>
+                                                <div class="form-group">
+                                                    <label for="day_of_week"><?php echo $translations["witchday"]; ?></label>
+                                                    <select class="form-control" id="day_of_week" name="day_of_week" required>
+                                                        <?php foreach ($days_of_week as $day): ?>
+                                                            <option value="<?= htmlspecialchars($day) ?>"><?= htmlspecialchars($day) ?></option>
+                                                        <?php endforeach; ?>
+                                                    </select>
+                                                </div>
+                                                <div class="form-group">
+                                                    <label for="color">Color</label>
+                                                    <input type="color" class="form-control" id="color" name="color" value="#0950dc" required>
+                                                </div>
+                                                <button type="submit" class="btn btn-primary"><i class="bi bi-plus-circle"></i> <?php echo $translations["add"]; ?></button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="card shadow">
+                                        <div class="card-body">
+                                            <form action="" method="POST" class="mb-4">
+                                                <input type="hidden" name="delete_event" value="1">
+                                                <div class="form-group">
+                                                    <label for="event_name"><?php echo $translations["eventdelete"]; ?></label>
+                                                    <select class="form-control" id="event_name" name="event_name" required>
+                                                        <?php foreach ($allEvents as $event): ?>
+                                                            <option value="<?= htmlspecialchars($event['event_name']) ?>"><?= htmlspecialchars($event['event_name']) ?></option>
+                                                        <?php endforeach; ?>
+                                                    </select>
+                                                </div>
+                                                <button type="submit" class="btn btn-danger"><i class="bi bi-x-circle"></i> <?php echo $translations["delete"]; ?></button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            <?php
+                            } else {
+                                echo $translations["dont-access"];
+                            }
+                            ?>
+
+
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
 
-    <div class="modal fade" id="logoutModal" tabindex="-1" role="dialog">
-        <div class="modal-dialog" style="margin-top: 100px;">
-            <div class="modal-content" style="border: none; box-shadow: 0 0 40px rgba(0,0,0,.2);">
-                <div class="modal-body text-center" style="padding: 40px;">
+        <div class="modal fade" id="logoutModal" tabindex="-1" role="dialog">
+            <div class="modal-dialog" style="margin-top: 100px;">
+                <div class="modal-content" style="border: none; box-shadow: 0 0 40px rgba(0,0,0,.2);">
+                    <div class="modal-body text-center" style="padding: 40px;">
 
-                    <div style="margin-bottom: 25px;">
-                        <div style="width: 80px; height: 80px; margin: 0 auto;
+                        <div style="margin-bottom: 25px;">
+                            <div style="width: 80px; height: 80px; margin: 0 auto;
                                 background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
                                 border-radius: 50%;
                                 display: flex; align-items: center; justify-content: center;">
-                            <i class="bi bi-box-arrow-right" style="color: #fff; font-size: 40px;"></i>
+                                <i class="bi bi-box-arrow-right" style="color: #fff; font-size: 40px;"></i>
+                            </div>
                         </div>
-                    </div>
 
-                    <h4 style="font-weight: bold; margin-bottom: 15px;">
-                        <p><?php echo $translations["exit-modal"]; ?></p>
-                    </h4>
+                        <h4 style="font-weight: bold; margin-bottom: 15px;">
+                            <p><?php echo $translations["exit-modal"]; ?></p>
+                        </h4>
 
-                    <div class="text-center">
-                        <a type="button" class="btn btn-default" data-dismiss="modal"
-                            style="padding: 8px 25px; margin-right: 10px;">
-                            <i class="bi bi-x-circle" style="margin-right: 5px;"></i>
-                            <?php echo $translations["not-yet"]; ?>
-                        </a>
+                        <div class="text-center">
+                            <a type="button" class="btn btn-default" data-dismiss="modal"
+                                style="padding: 8px 25px; margin-right: 10px;">
+                                <i class="bi bi-x-circle" style="margin-right: 5px;"></i>
+                                <?php echo $translations["not-yet"]; ?>
+                            </a>
 
-                        <a href="../../logout.php" type="button" class="btn btn-danger" style="padding: 8px 25px;">
-                            <i class="bi bi-check-circle" style="margin-right: 5px;"></i>
-                            <?php echo $translations["confirm"]; ?>
-                        </a>
+                            <a href="../../logout.php" type="button" class="btn btn-danger" style="padding: 8px 25px;">
+                                <i class="bi bi-check-circle" style="margin-right: 5px;"></i>
+                                <?php echo $translations["confirm"]; ?>
+                            </a>
+                        </div>
+
                     </div>
                 </div>
             </div>
         </div>
-    </div>
 
-    <!-- EMAIL MODAL -->
-
-    <!-- SCRIPTS! -->
-    <script src="../../../assets/js/date-time.js"></script>
-    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
+        <!-- SCRIPTS! -->
+        <script src="../../../assets/js/date-time.js"></script>
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"
+            integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa"
+            crossorigin="anonymous"></script>
 </body>
 
 </html>

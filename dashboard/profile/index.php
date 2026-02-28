@@ -355,7 +355,8 @@ $conn->close();
         <ul class="nav navbar-nav">
           <li><a href="../"><i class="bi bi-house"></i> <?php echo $translations["mainpage"]; ?></a></li>
           <li><a href="../stats/"><i class="bi bi-graph-up"></i> <?php echo $translations["statspage"]; ?></a></li>
-          <li class="active"><a href=""><i class="bi bi-person-badge"></i> <?php echo $translations["profilepage"]; ?></a></li>
+          <li class="active"><a href=""><i class="bi bi-person-badge"></i>
+              <?php echo $translations["profilepage"]; ?></a></li>
           <li><a href="../invoices/"><i class="bi bi-receipt"></i> <?php echo $translations["invoicepage"]; ?></a></li>
         </ul>
       </div>
@@ -411,9 +412,12 @@ $conn->close();
                     <div class="col-md-9">
                       <div class="mb-3">
                         <div class="form-group">
-                          <label for="profilePicture" class="form-label"><?php echo $translations["select-upload-profile"]; ?></label>
-                          <input type="file" class="form-control" id="profilePicture" name="profilePicture" accept=".png,.jpg,.jpeg,.gif" required>
-                          <div id="fileHelp" class="form-text"><small><?php echo $translations["onlypng"]; ?></small></div>
+                          <label for="profilePicture"
+                            class="form-label"><?php echo $translations["select-upload-profile"]; ?></label>
+                          <input type="file" class="form-control" id="profilePicture" name="profilePicture"
+                            accept=".png,.jpg,.jpeg,.gif" required>
+                          <div id="fileHelp" class="form-text"><small><?php echo $translations["onlypng"]; ?></small>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -422,12 +426,14 @@ $conn->close();
                     $profilePicPath = '../../assets/img/profiles/' . $userid . '.png';
                     if (file_exists($profilePicPath)): ?>
                       <div class="col-md-3 text-center">
-                        <img src="<?php echo $profilePicPath; ?>" alt="User" class="img-rounded img-fluid mb-3" height="150">
+                        <img src="<?php echo $profilePicPath; ?>" alt="User" class="img-rounded img-fluid mb-3"
+                          height="150">
                       </div>
                     <?php endif; ?>
 
                   </div>
-                  <button type="submit" class="btn btn-primary"><i class="bi bi-save"></i> <?php echo $translations["upload"]; ?></button>
+                  <button type="submit" class="btn btn-primary"><i class="bi bi-save"></i>
+                    <?php echo $translations["upload"]; ?></button>
                 </form>
               </div>
             </div>
@@ -440,25 +446,31 @@ $conn->close();
                     <div class="col-md-12">
                       <div class="mb-3">
                         <div class="form-group">
-                          <label for="currentPassword" class="form-label"><?php echo $translations["curpassword"]; ?></label>
-                          <input type="password" class="form-control" id="currentPassword" name="currentPassword" required>
+                          <label for="currentPassword"
+                            class="form-label"><?php echo $translations["curpassword"]; ?></label>
+                          <input type="password" class="form-control" id="currentPassword" name="currentPassword"
+                            required>
                         </div>
                       </div>
                       <div class="mb-3">
                         <div class="form-group">
-                          <label for="newPassword" class="form-label"><?php echo $translations["newpassword"]; ?></label>
+                          <label for="newPassword"
+                            class="form-label"><?php echo $translations["newpassword"]; ?></label>
                           <input type="password" class="form-control" id="newPassword" name="newPassword" required>
                         </div>
                       </div>
                       <div class="mb-3">
                         <div class="form-group">
-                          <label for="confirmPassword" class="form-label"><?php echo $translations["password-confirm"]; ?>:</label>
-                          <input type="password" class="form-control" id="confirmPassword" name="confirmPassword" required>
+                          <label for="confirmPassword"
+                            class="form-label"><?php echo $translations["password-confirm"]; ?>:</label>
+                          <input type="password" class="form-control" id="confirmPassword" name="confirmPassword"
+                            required>
                         </div>
                       </div>
                     </div>
                   </div>
-                  <button type="submit" class="btn btn-primary"><i class="bi bi-save"></i> <?php echo $translations["save"]; ?></button>
+                  <button type="submit" class="btn btn-primary"><i class="bi bi-save"></i>
+                    <?php echo $translations["save"]; ?></button>
                 </form>
 
               </div>
@@ -484,7 +496,8 @@ $conn->close();
                       </div>
                     </div>
                   </div>
-                  <button type="submit" class="btn btn-primary w-100"><i class="bi bi-save"></i> <?php echo $translations["save"]; ?></button>
+                  <button type="submit" class="btn btn-primary w-100"><i class="bi bi-save"></i>
+                    <?php echo $translations["save"]; ?></button>
                 </form>
               </div>
             </div>
@@ -500,18 +513,36 @@ $conn->close();
     </div>
 
     <!-- EXIT MODAL -->
-    <div class="modal fade" id="logoutModal" tabindex="-1" role="dialog" aria-labelledby="logoutModalLabel"
-      aria-hidden="true">
-      <div class="modal-dialog" role="document">
-        <div class="modal-content">
-          <div class="modal-body">
-            <p class="lead"><?php echo $translations["exit-modal"]; ?></p>
-          </div>
-          <div class="modal-footer">
-            <a type="button" class="btn btn-secondary"
-              data-dismiss="modal"><?php echo $translations["not-yet"]; ?></a>
-            <a href="../logout.php" type="button"
-              class="btn btn-danger"><?php echo $translations["confirm"]; ?></a>
+    <div class="modal fade" id="logoutModal" tabindex="-1" role="dialog">
+      <div class="modal-dialog" style="margin-top: 100px;">
+        <div class="modal-content" style="border: none; box-shadow: 0 0 40px rgba(0,0,0,.2);">
+          <div class="modal-body text-center" style="padding: 40px;">
+
+            <div style="margin-bottom: 25px;">
+              <div style="width: 80px; height: 80px; margin: 0 auto;
+                                background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+                                border-radius: 50%;
+                                display: flex; align-items: center; justify-content: center;">
+                <i class="bi bi-box-arrow-right" style="color: #fff; font-size: 40px;"></i>
+              </div>
+            </div>
+
+            <h4 style="font-weight: bold; margin-bottom: 15px;">
+              <p><?php echo $translations["exit-modal"]; ?></p>
+            </h4>
+
+            <div class="text-center">
+              <a type="button" class="btn btn-default" data-dismiss="modal"
+                style="padding: 8px 25px; margin-right: 10px;">
+                <i class="bi bi-x-circle" style="margin-right: 5px;"></i>
+                <?php echo $translations["not-yet"]; ?>
+              </a>
+
+              <a href="../logout.php" type="button" class="btn btn-danger" style="padding: 8px 25px;">
+                <i class="bi bi-check-circle" style="margin-right: 5px;"></i>
+                <?php echo $translations["confirm"]; ?>
+              </a>
+            </div>
           </div>
         </div>
       </div>

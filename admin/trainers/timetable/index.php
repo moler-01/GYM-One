@@ -140,13 +140,13 @@ $is_new_version_available = version_compare($latest_version, $current_version) >
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_event'])) {
     $event_name = $conn->real_escape_string($_POST['event_name']);
-    $start_time =  $conn->real_escape_string($_POST['start_time']);
-    $end_time =  $conn->real_escape_string($_POST['end_time']);
-    $day_of_week =  $conn->real_escape_string($_POST['day_of_week']);
-    $color =  $conn->real_escape_string($_POST['color']);
+    $start_time = $conn->real_escape_string($_POST['start_time']);
+    $end_time = $conn->real_escape_string($_POST['end_time']);
+    $day_of_week = $conn->real_escape_string($_POST['day_of_week']);
+    $color = $conn->real_escape_string($_POST['color']);
 
     $sql = "INSERT INTO timetable (event_name, start_time, end_time, day_of_week, color) VALUES (?, ?, ?, ?, ?)";
-    $stmt =  $conn->prepare($sql);
+    $stmt = $conn->prepare($sql);
     $stmt->bind_param('sssss', $event_name, $start_time, $end_time, $day_of_week, $color);
     $stmt->execute();
     $stmt->close();
@@ -155,10 +155,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_event'])) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['delete_event'])) {
-    $event_name =  $conn->real_escape_string($_POST['event_name']);
+    $event_name = $conn->real_escape_string($_POST['event_name']);
 
     $sql = "DELETE FROM timetable WHERE event_name = ?";
-    $stmt =  $conn->prepare($sql);
+    $stmt = $conn->prepare($sql);
     $stmt->bind_param('s', $event_name);
     $stmt->execute();
     $stmt->close();
@@ -170,7 +170,7 @@ $days_of_week = [$translations["Mon"], $translations["Tue"], $translations["Wed"
 $timetable = [];
 foreach ($days_of_week as $day) {
     $sql = "SELECT * FROM timetable WHERE day_of_week = ? ORDER BY start_time";
-    $stmt =  $conn->prepare($sql);
+    $stmt = $conn->prepare($sql);
     $stmt->bind_param('s', $day);
     $stmt->execute();
     $result = $stmt->get_result();
@@ -179,7 +179,7 @@ foreach ($days_of_week as $day) {
 }
 
 $sql = "SELECT event_name FROM timetable ORDER BY event_name";
-$result =  $conn->query($sql);
+$result = $conn->query($sql);
 $allEvents = $result->fetch_all(MYSQLI_ASSOC);
 
 $hours = [];
@@ -223,14 +223,20 @@ $conn->close();
             </div>
             <div class="collapse navbar-collapse" id="myNavbar">
                 <ul class="nav navbar-nav">
-                    <li><a href="../../dashboard"><i class="bi bi-speedometer"></i> <?php echo $translations["mainpage"]; ?></a></li>
-                    <li><a href="../../users"><i class="bi bi-people"></i> <?php echo $translations["users"]; ?></a></li>
-                    <li><a href="../../statistics"><i class="bi bi-bar-chart"></i> <?php echo $translations["statspage"]; ?></a></li>
-                    <li><a href="../../boss/sell"><i class="bi bi-shop"></i> <?php echo $translations["sellpage"]; ?></a></li>
-                    <li><a href="../../invoices"><i class="bi bi-receipt"></i> <?php echo $translations["invoicepage"]; ?></a></li>
+                    <li><a href="../../dashboard"><i class="bi bi-speedometer"></i>
+                            <?php echo $translations["mainpage"]; ?></a></li>
+                    <li><a href="../../users"><i class="bi bi-people"></i> <?php echo $translations["users"]; ?></a>
+                    </li>
+                    <li><a href="../../statistics"><i class="bi bi-bar-chart"></i>
+                            <?php echo $translations["statspage"]; ?></a></li>
+                    <li><a href="../../boss/sell"><i class="bi bi-shop"></i>
+                            <?php echo $translations["sellpage"]; ?></a></li>
+                    <li><a href="../../invoices"><i class="bi bi-receipt"></i>
+                            <?php echo $translations["invoicepage"]; ?></a></li>
                     <?php if ($is_boss === 1) { ?>
                         <li class="dropdown">
-                            <a class="dropdown-toggle" data-toggle="dropdown" href="#"><i class="bi bi-gear"></i> <?php echo $translations["settings"]; ?> <span class="caret"></span></a>
+                            <a class="dropdown-toggle" data-toggle="dropdown" href="#"><i class="bi bi-gear"></i>
+                                <?php echo $translations["settings"]; ?> <span class="caret"></span></a>
                             <ul class="dropdown-menu">
                                 <li><a href="../../boss/mainsettings"><?php echo $translations["businesspage"]; ?></a></li>
                                 <li><a href="../../boss/workers"><?php echo $translations["workers"]; ?></a></li>
@@ -242,17 +248,22 @@ $conn->close();
                             </ul>
                         </li>
                     <?php } ?>
-                    <li><a href="../../shop/tickets"><i class="bi bi-ticket"></i> <?php echo $translations["ticketspage"]; ?></a></li>
-                    <li class="active"><a href="#"><i class="bi bi-calendar-event"></i> <?php echo $translations["timetable"]; ?></a></li>
-                    <li><a href="../../trainers/personal"><i class="bi bi-award"></i> <?php echo $translations["trainers"]; ?></a></li>
+                    <li><a href="../../shop/tickets"><i class="bi bi-ticket"></i>
+                            <?php echo $translations["ticketspage"]; ?></a></li>
+                    <li class="active"><a href="#"><i class="bi bi-calendar-event"></i>
+                            <?php echo $translations["timetable"]; ?></a></li>
+                    <li><a href="../../trainers/personal"><i class="bi bi-award"></i>
+                            <?php echo $translations["trainers"]; ?></a></li>
                     <?php if ($is_boss === 1) { ?>
-                        <li><a href="../../updater"><i class="bi bi-cloud-download"></i> <?php echo $translations["updatepage"]; ?>
-                                <?php if ($is_new_version_available) : ?>
+                        <li><a href="../../updater"><i class="bi bi-cloud-download"></i>
+                                <?php echo $translations["updatepage"]; ?>
+                                <?php if ($is_new_version_available): ?>
                                     <span class="badge badge-warning"><i class="bi bi-exclamation-circle"></i></span>
                                 <?php endif; ?>
                             </a></li>
                     <?php } ?>
-                    <li><a href="../../log"><i class="bi bi-clock-history"></i> <?php echo $translations["logpage"]; ?></a></li>
+                    <li><a href="../../log"><i class="bi bi-clock-history"></i>
+                            <?php echo $translations["logpage"]; ?></a></li>
                 </ul>
             </div>
         </div>
@@ -291,7 +302,7 @@ $conn->close();
                     </li>
                     <?php
                     if ($is_boss === 1) {
-                    ?>
+                        ?>
                         <li class="sidebar-header">
                             <?php echo $translations["settings"]; ?>
                         </li>
@@ -337,7 +348,7 @@ $conn->close();
                                 <span><?php echo $translations["rulepage"]; ?></span>
                             </a>
                         </li>
-                    <?php
+                        <?php
                     }
                     ?>
                     <li class="sidebar-header">
@@ -373,19 +384,19 @@ $conn->close();
                     <li class="sidebar-header"><?php echo $translations["other-header"]; ?></li>
                     <?php
                     if ($is_boss === 1) {
-                    ?>
+                        ?>
                         <li class="sidebar-item">
                             <a class="sidebar-ling" href="../../updater">
                                 <i class="bi bi-cloud-download"></i>
                                 <span><?php echo $translations["updatepage"]; ?></span>
-                                <?php if ($is_new_version_available) : ?>
+                                <?php if ($is_new_version_available): ?>
                                     <span class="sidebar-badge badge">
                                         <i class="bi bi-exclamation-circle"></i>
                                     </span>
                                 <?php endif; ?>
                             </a>
                         </li>
-                    <?php
+                        <?php
                     }
                     ?>
                     <li class="sidebar-item">
@@ -422,157 +433,239 @@ $conn->close();
                         <div class="card shadow">
                             <div class="card-body">
 
-                                <?php
-                                if ($is_boss == 1) {
-                                ?>
-                                    <div class="table-responsive">
-                                        <table class="table table-bordered calendar-table">
-                                            <thead>
-                                                <tr>
-                                                    <th><?php echo $translations["time"]; ?></th>
-                                                    <?php foreach ($days_of_week as $day): ?>
-                                                        <th><?= htmlspecialchars($day) ?></th>
-                                                    <?php endforeach; ?>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <?php foreach ($hours as $hour): ?>
-                                                    <tr>
-                                                        <td class="time-cell"><?= htmlspecialchars($hour) ?></td>
-                                                        <?php foreach ($days_of_week as $day): ?>
-                                                            <td class="time-cell text-center">
-                                                                <?php
-                                                                [$currentHourStart, $currentHourEnd] = array_map('strtotime', explode('-', $hour));
+                                <?php if ($is_boss == 1): ?>
 
-                                                                foreach ($timetable[$day] as $event) {
-                                                                    $eventStart = strtotime($event['start_time']);
-                                                                    $eventEnd = strtotime($event['end_time']);
+                                    <!-- FullCalendar CSS + JS -->
+                                    <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.css"
+                                        rel="stylesheet">
+                                    <script
+                                        src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
 
-                                                                    if ($eventStart < $currentHourEnd && $eventEnd > $currentHourStart) {
-                                                                        $eventStyle = 'background-color: ' . htmlspecialchars($event['color']) . ';';
-                                                                        $eventText = htmlspecialchars($event['event_name']) . '<br> (' . date('H:i', $eventStart) . '-' . date('H:i', $eventEnd) . ')';
+                                    <style>
+                                        #calendar {
+                                            width: 100%;
+                                        }
 
-                                                                        $eventStyle .= ($eventStart <= $currentHourStart && $eventEnd >= $currentHourEnd)
-                                                                            ? 'height: 100%;' : 'height: auto;';
+                                        .fc-timegrid-slot {
+                                            height: 25px !important;
+                                            /* 1 óra = 60px */
+                                        }
+                                    </style>
 
-                                                                        if (($eventEnd - $eventStart) == 3600) {
-                                                                            $eventStyle .= 'height: 100%;';
-                                                                        }
-
-                                                                        echo '<div class="event" style="' . $eventStyle . '">' . $eventText . '</div>';
-                                                                    }
-                                                                }
-                                                                ?>
-                                                            </td>
-                                                        <?php endforeach; ?>
-                                                    </tr>
-                                                <?php endforeach; ?>
-                                            </tbody>
-                                        </table>
                                     <?php
-                                } else {
-                                    echo $translations["dont-access"];
-                                }
+
+                                    /*
+                                     * A DB-ből jövő napnevek → FullCalendar napok
+                                     * A te $days_of_week nyelvi nevei alapján
+                                     */
+
+                                    $dayIndex = [
+                                        $translations["Mon"] => 1,
+                                        $translations["Tue"] => 2,
+                                        $translations["Wed"] => 3,
+                                        $translations["Thu"] => 4,
+                                        $translations["Fri"] => 5,
+                                        $translations["Sat"] => 6,
+                                        $translations["Sun"] => 7
+                                    ];
+
+                                    // aktuális hét hétfőjének dátuma
+                                    $monday = date('Y-m-d', strtotime('monday this week'));
+
+                                    // FullCalendar események
+                                    $fc_events = [];
+
+                                    foreach ($days_of_week as $day) {
+
+                                        if (!isset($timetable[$day]))
+                                            continue;
+
+                                        foreach ($timetable[$day] as $event) {
+
+                                            // melyik napon legyen
+                                            $dow = $dayIndex[$day];
+                                            $eventDate = date('Y-m-d', strtotime($monday . " + " . ($dow - 1) . " days"));
+
+                                            // kezdés + befejezés
+                                            $start = $eventDate . " " . $event["start_time"];
+                                            $end = $eventDate . " " . $event["end_time"];
+
+                                            $fc_events[] = [
+                                                "title" => $event["event_name"],
+                                                "start" => $start,
+                                                "end" => $end,
+                                                "color" => $event["color"]
+                                            ];
+                                        }
+                                    }
 
                                     ?>
 
-                                    </div>
+                                    <script>
+                                        const timetableEvents = <?php echo json_encode($fc_events); ?>;
+                                    </script>
+
+                                    <div id="calendar"></div>
+
+                                    <script>
+                                        document.addEventListener('DOMContentLoaded', function () {
+                                            let calendarEl = document.getElementById('calendar');
+
+                                            let calendar = new FullCalendar.Calendar(calendarEl, {
+                                                initialView: 'timeGridWeek',
+                                                slotMinTime: "06:00:00",
+                                                slotMaxTime: "23:00:00",
+                                                allDaySlot: true,
+                                                height: "auto",
+                                                events: timetableEvents,
+                                                firstDay: 1, // hétfő
+                                                editable: false,
+                                                eventOverlap: true,
+                                                nowIndicator: true,
+                                                locale: 'hu',
+
+                                                headerToolbar: {
+                                                    left: '',
+                                                    center: 'title',
+                                                    right: ''
+                                                }
+                                            });
+
+                                            calendar.render();
+                                        });
+                                    </script>
+
+                                <?php else: ?>
+
+                                    <?php echo $translations["dont-access"]; ?>
+
+                                <?php endif; ?>
+
                             </div>
                         </div>
-                        <div class="col">
-                            <?php
-                            if ($is_boss == 1) {
-                            ?>
-                                <div class="col-md-6">
-                                    <div class="card shadow">
-                                        <div class="card-header">
-                                            <?php echo $translations["add-timetable-event"]; ?>
-                                        </div>
-                                        <div class="card-body">
-                                            <form action="" method="POST" class="mb-4">
-                                                <input type="hidden" name="add_event" value="1">
-                                                <div class="form-group">
-                                                    <label for="event_name"><?php echo $translations["eventname"]; ?></label>
-                                                    <input type="text" class="form-control" id="event_name" name="event_name" required>
-                                                </div>
-                                                <div class="form-group">
-                                                    <label for="start_time"><?php echo $translations["starttime"]; ?></label>
-                                                    <input type="time" class="form-control" id="start_time" name="start_time" required>
-                                                </div>
-                                                <div class="form-group">
-                                                    <label for="end_time"><?php echo $translations["endtime"]; ?></label>
-                                                    <input type="time" class="form-control" id="end_time" name="end_time" required>
-                                                </div>
-                                                <div class="form-group">
-                                                    <label for="day_of_week"><?php echo $translations["witchday"]; ?></label>
-                                                    <select class="form-control" id="day_of_week" name="day_of_week" required>
-                                                        <?php foreach ($days_of_week as $day): ?>
-                                                            <option value="<?= htmlspecialchars($day) ?>"><?= htmlspecialchars($day) ?></option>
-                                                        <?php endforeach; ?>
-                                                    </select>
-                                                </div>
-                                                <div class="form-group">
-                                                    <label for="color">Color</label>
-                                                    <input type="color" class="form-control" id="color" name="color" value="#0950dc" required>
-                                                </div>
-                                                <button type="submit" class="btn btn-primary"><i class="bi bi-plus-circle"></i> <?php echo $translations["add"]; ?></button>
-                                            </form>
-                                        </div>
-                                    </div>
+                    </div>
+                </div>
+
+                <div class="col">
+                    <?php
+                    if ($is_boss == 1) {
+                        ?>
+                        <div class="col-md-6">
+                            <div class="card shadow">
+                                <div class="card-header">
+                                    <?php echo $translations["add-timetable-event"]; ?>
                                 </div>
-                                <div class="col-md-6">
-                                    <div class="card shadow">
-                                        <div class="card-body">
-                                            <form action="" method="POST" class="mb-4">
-                                                <input type="hidden" name="delete_event" value="1">
-                                                <div class="form-group">
-                                                    <label for="event_name"><?php echo $translations["eventdelete"]; ?></label>
-                                                    <select class="form-control" id="event_name" name="event_name" required>
-                                                        <?php foreach ($allEvents as $event): ?>
-                                                            <option value="<?= htmlspecialchars($event['event_name']) ?>"><?= htmlspecialchars($event['event_name']) ?></option>
-                                                        <?php endforeach; ?>
-                                                    </select>
-                                                </div>
-                                                <button type="submit" class="btn btn-danger"><i class="bi bi-x-circle"></i> <?php echo $translations["delete"]; ?></button>
-                                            </form>
+                                <div class="card-body">
+                                    <form action="" method="POST" class="mb-4">
+                                        <input type="hidden" name="add_event" value="1">
+                                        <div class="form-group">
+                                            <label for="event_name"><?php echo $translations["eventname"]; ?></label>
+                                            <input type="text" class="form-control" id="event_name" name="event_name"
+                                                required>
                                         </div>
-                                    </div>
+                                        <div class="form-group">
+                                            <label for="start_time"><?php echo $translations["starttime"]; ?></label>
+                                            <input type="time" class="form-control" id="start_time" name="start_time"
+                                                required>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="end_time"><?php echo $translations["endtime"]; ?></label>
+                                            <input type="time" class="form-control" id="end_time" name="end_time" required>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="day_of_week"><?php echo $translations["witchday"]; ?></label>
+                                            <select class="form-control" id="day_of_week" name="day_of_week" required>
+                                                <?php foreach ($days_of_week as $day): ?>
+                                                    <option value="<?= htmlspecialchars($day) ?>"><?= htmlspecialchars($day) ?>
+                                                    </option>
+                                                <?php endforeach; ?>
+                                            </select>
+                                        </div>
+                                        <div class="form-group">
+                                            <label for="color">Color</label>
+                                            <input type="color" class="form-control" id="color" name="color" value="#0950dc"
+                                                required>
+                                        </div>
+                                        <button type="submit" class="btn btn-primary"><i class="bi bi-plus-circle"></i>
+                                            <?php echo $translations["add"]; ?></button>
+                                    </form>
                                 </div>
-                            <?php
-                            } else {
-                                echo $translations["dont-access"];
-                            }
-                            ?>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card shadow">
+                                <div class="card-body">
+                                    <form action="" method="POST" class="mb-4">
+                                        <input type="hidden" name="delete_event" value="1">
+                                        <div class="form-group">
+                                            <label for="event_name"><?php echo $translations["eventdelete"]; ?></label>
+                                            <select class="form-control" id="event_name" name="event_name" required>
+                                                <?php foreach ($allEvents as $event): ?>
+                                                    <option value="<?= htmlspecialchars($event['event_name']) ?>">
+                                                        <?= htmlspecialchars($event['event_name']) ?></option>
+                                                <?php endforeach; ?>
+                                            </select>
+                                        </div>
+                                        <button type="submit" class="btn btn-danger"><i class="bi bi-x-circle"></i>
+                                            <?php echo $translations["delete"]; ?></button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        <?php
+                    } else {
+                        echo $translations["dont-access"];
+                    }
+                    ?>
 
 
+                </div>
+            </div>
+        </div>
+    </div>
+    </div>
+
+    <div class="modal fade" id="logoutModal" tabindex="-1" role="dialog">
+        <div class="modal-dialog" style="margin-top: 100px;">
+            <div class="modal-content" style="border: none; box-shadow: 0 0 40px rgba(0,0,0,.2);">
+                <div class="modal-body text-center" style="padding: 40px;">
+
+                    <div style="margin-bottom: 25px;">
+                        <div style="width: 80px; height: 80px; margin: 0 auto;
+                                background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+                                border-radius: 50%;
+                                display: flex; align-items: center; justify-content: center;">
+                            <i class="bi bi-box-arrow-right" style="color: #fff; font-size: 40px;"></i>
                         </div>
                     </div>
-                </div>
-            </div>
-        </div>
 
-        <div class="modal fade" id="logoutModal" tabindex="-1" role="dialog" aria-labelledby="logoutModalLabel"
-            aria-hidden="true">
-            <div class="modal-dialog" role="document">
-                <div class="modal-content">
-                    <div class="modal-body">
+                    <h4 style="font-weight: bold; margin-bottom: 15px;">
                         <p><?php echo $translations["exit-modal"]; ?></p>
+                    </h4>
+
+                    <div class="text-center">
+                        <a type="button" class="btn btn-default" data-dismiss="modal"
+                            style="padding: 8px 25px; margin-right: 10px;">
+                            <i class="bi bi-x-circle" style="margin-right: 5px;"></i>
+                            <?php echo $translations["not-yet"]; ?>
+                        </a>
+
+                        <a href="../../logout.php" type="button" class="btn btn-danger" style="padding: 8px 25px;">
+                            <i class="bi bi-check-circle" style="margin-right: 5px;"></i>
+                            <?php echo $translations["confirm"]; ?>
+                        </a>
                     </div>
-                    <div class="modal-footer">
-                        <a type="button" class="btn btn-secondary"
-                            data-dismiss="modal"><?php echo $translations["not-yet"]; ?></a>
-                        <a href="../../logout.php" type="button"
-                            class="btn btn-danger"><?php echo $translations["confirm"]; ?></a>
-                    </div>
+
                 </div>
             </div>
         </div>
+    </div>
 
-        <!-- SCRIPTS! -->
-        <script src="../../../assets/js/date-time.js"></script>
-        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"
-            integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa"
-            crossorigin="anonymous"></script>
+    <!-- SCRIPTS! -->
+    <script src="../../../assets/js/date-time.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"
+        integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa"
+        crossorigin="anonymous"></script>
 </body>
 
 </html>

@@ -112,59 +112,103 @@ if (isset($_GET['user']) && is_numeric($_GET['user'])) {
 
 
 if (isset($_POST['save'])) {
-  $new_firstname = $_POST['firstname'];
-  $new_lastname = $_POST['lastname'];
-  $new_email = $_POST['email'];
+  $fields = ['firstname', 'lastname', 'email'];
+  $new_data = [];
+  foreach ($fields as $field) {
+    if (empty($_POST[$field])) {
+      $alerts_html .= '<div class="alert alert-danger">Minden mező kitöltése kötelező.</div>';
+      return;
+    }
+    $new_data[$field] = $_POST[$field];
+  }
 
-  if (empty($new_firstname) || empty($new_lastname) || empty($new_email)) {
-    echo "Minden mező kitöltése kötelező.";
-  } else {
-    $sql_update = "UPDATE users SET firstname = '$new_firstname', lastname = '$new_lastname', email = '$new_email' WHERE userid = $useridgymuser";
+  $sql_old = "SELECT firstname, lastname, email FROM users WHERE userid = ?";
+  $stmt_old = $conn->prepare($sql_old);
+  $stmt_old->bind_param("i", $useridgymuser);
+  $stmt_old->execute();
+  $result_old = $stmt_old->get_result()->fetch_assoc();
+  $stmt_old->close();
 
-    if ($conn->query($sql_update) === TRUE) {
-      $alerts_html .= '<div class="alert alert-success" role="alert">
-                                    ' . $translations["success-update"] . '
-                                </div>';
-      $action = $translations['success-edit-user'] . ' ID: ' . $useridgymuser . ' Mail: ' . $new_email;
-      $actioncolor = 'warning';
-      $sql = "INSERT INTO logs (userid, action, actioncolor, time) 
-                            VALUES (?, ?, ?, NOW())";
-      $stmt = $conn->prepare($sql);
-      $stmt->bind_param("iss", $userid, $action, $actioncolor);
-      $stmt->execute();
-      header("Refresh:2");
+  $changes = [];
+  foreach ($fields as $field) {
+    if ($result_old[$field] !== $new_data[$field]) {
+      $changes["{$field}_old"] = $result_old[$field];
+      $changes["{$field}_new"] = $new_data[$field];
+    }
+  }
+
+  if (!empty($changes)) {
+    $sql_update = "UPDATE users SET firstname = ?, lastname = ?, email = ? WHERE userid = ?";
+    $stmt_update = $conn->prepare($sql_update);
+    $stmt_update->bind_param("sssi", $new_data['firstname'], $new_data['lastname'], $new_data['email'], $useridgymuser);
+
+    if ($stmt_update->execute()) {
+      $stmt_update->close();
+
+      $log_sql = "INSERT INTO logs (userid, action, actioncolor, details, time) VALUES (?, ?, ?, ?, NOW())";
+      $stmt_log = $conn->prepare($log_sql);
+      $action = $translations["success-edit-user"];
+      $color = "info";
+      $details = json_encode($changes, JSON_UNESCAPED_UNICODE);
+      $stmt_log->bind_param("isss", $_SESSION['adminuser'], $action, $color, $details);
+      $stmt_log->execute();
+      $stmt_log->close();
+
+      $alerts_html .= '<div class="alert alert-success">' . $translations["success-update"] . '</div>';
+      header("Refresh: 1");
       exit;
     } else {
-      $alerts_html .= '<div class="alert alert-danger" role="alert">Unexpected error: ' . $conn->error . '</div>';
+      $alerts_html .= '<div class="alert alert-danger">Unexpected error: ' . $conn->error . '</div>';
     }
   }
 }
+
 
 if (isset($_POST['delete_user'])) {
+    $sql_get = "SELECT email FROM users WHERE userid = ?";
+    $stmt_get = $conn->prepare($sql_get);
+    $stmt_get->bind_param("i", $useridgymuser);
+    $stmt_get->execute();
+    $result_old = $stmt_get->get_result()->fetch_assoc();
+    $stmt_get->close();
 
-  $sql = "DELETE FROM users WHERE userid = ?";
+    if ($result_old) {
+        $sql_delete = "DELETE FROM users WHERE userid = ?";
+        $stmt_delete = $conn->prepare($sql_delete);
+        $stmt_delete->bind_param("i", $useridgymuser);
 
-  if ($stmt = $conn->prepare($sql)) {
-    $stmt->bind_param("i", $useridgymuser);
-    if ($stmt->execute()) {
-      $action = $translations['success-delete-user'] . ' ID: ' . $useridgymuser . ' ' . $firstname . ' ' . $lastname;
-      $actioncolor = 'danger';
-      $sql = "INSERT INTO logs (userid, action, actioncolor, time) 
-                            VALUES (?, ?, ?, NOW())";
-      $stmt = $conn->prepare($sql);
-      $stmt->bind_param("iss", $userid, $action, $actioncolor);
-      $stmt->execute();
-      header("Location: ../");
+        if ($stmt_delete->execute()) {
+            $stmt_delete->close();
+
+            $changes = [
+                "userid" => $useridgymuser,
+                "email" => $result_old['email'],
+                "balance" => $balance,
+                "deleted_at" => date("Y-m-d H:i:s")
+            ];
+
+            $log_action = $translations['success-delete-user'];
+            $log_color = 'danger';
+            $log_details = json_encode($changes, JSON_UNESCAPED_UNICODE);
+
+            $log_sql = "INSERT INTO logs (userid, action, actioncolor, details, time) VALUES (?, ?, ?, ?, NOW())";
+            $stmt_log = $conn->prepare($log_sql);
+            $stmt_log->bind_param("isss", $_SESSION['adminuser'], $log_action, $log_color, $log_details);
+            $stmt_log->execute();
+            $stmt_log->close();
+
+            header("Location: ../");
+            exit;
+        } else {
+            $alerts_html .= '<div class="alert alert-danger" role="alert">' . $translations["deletefail"] . '</div>';
+        }
     } else {
-      $alerts_html .= '<div class="alert alert-danger" role="alert">
-                                    ' . $translations["deletefail"] . '
-                                </div>';
+        $alerts_html .= '<div class="alert alert-warning" role="alert">A felhasználó nem található.</div>';
     }
-    $stmt->close();
-  }
 
-  $conn->close();
+    $conn->close();
 }
+
 
 $today = date('Y-m-d');
 
@@ -278,14 +322,18 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['userid'])) {
       </div>
       <div class="collapse navbar-collapse" id="myNavbar">
         <ul class="nav navbar-nav">
-          <li><a href="../../dashboard"><i class="bi bi-speedometer"></i> <?php echo $translations["mainpage"]; ?></a></li>
+          <li><a href="../../dashboard"><i class="bi bi-speedometer"></i> <?php echo $translations["mainpage"]; ?></a>
+          </li>
           <li class="active"><a href="../"><i class="bi bi-people"></i> <?php echo $translations["users"]; ?></a></li>
-          <li><a href="../../statistics"><i class="bi bi-bar-chart"></i> <?php echo $translations["statspage"]; ?></a></li>
+          <li><a href="../../statistics"><i class="bi bi-bar-chart"></i> <?php echo $translations["statspage"]; ?></a>
+          </li>
           <li><a href="../../boss/sell"><i class="bi bi-shop"></i> <?php echo $translations["sellpage"]; ?></a></li>
-          <li><a href="../../invoices"><i class="bi bi-receipt"></i> <?php echo $translations["invoicepage"]; ?></a></li>
+          <li><a href="../../invoices"><i class="bi bi-receipt"></i> <?php echo $translations["invoicepage"]; ?></a>
+          </li>
           <?php if ($is_boss === 1) { ?>
             <li class="dropdown">
-              <a class="dropdown-toggle" data-toggle="dropdown" href="#"><i class="bi bi-gear"></i> <?php echo $translations["settings"]; ?> <span class="caret"></span></a>
+              <a class="dropdown-toggle" data-toggle="dropdown" href="#"><i class="bi bi-gear"></i>
+                <?php echo $translations["settings"]; ?> <span class="caret"></span></a>
               <ul class="dropdown-menu">
                 <li><a href="../../boss/mainsettings"><?php echo $translations["businesspage"]; ?></a></li>
                 <li><a href="../../boss/workers"><?php echo $translations["workers"]; ?></a></li>
@@ -297,12 +345,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['userid'])) {
               </ul>
             </li>
           <?php } ?>
-          <li><a href="../../shop/tickets"><i class="bi bi-ticket"></i> <?php echo $translations["ticketspage"]; ?></a></li>
-          <li><a href="../../trainers/timetable"><i class="bi bi-calendar-event"></i> <?php echo $translations["timetable"]; ?></a></li>
-          <li><a href="../../trainers/personal"><i class="bi bi-award"></i> <?php echo $translations["trainers"]; ?></a></li>
+          <li><a href="../../shop/tickets"><i class="bi bi-ticket"></i> <?php echo $translations["ticketspage"]; ?></a>
+          </li>
+          <li><a href="../../trainers/timetable"><i class="bi bi-calendar-event"></i>
+              <?php echo $translations["timetable"]; ?></a></li>
+          <li><a href="../../trainers/personal"><i class="bi bi-award"></i> <?php echo $translations["trainers"]; ?></a>
+          </li>
           <?php if ($is_boss === 1) { ?>
             <li><a href="../../updater"><i class="bi bi-cloud-download"></i> <?php echo $translations["updatepage"]; ?>
-                <?php if ($is_new_version_available) : ?>
+                <?php if ($is_new_version_available): ?>
                   <span class="badge badge-warning"><i class="bi bi-exclamation-circle"></i></span>
                 <?php endif; ?>
               </a></li>
@@ -346,7 +397,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['userid'])) {
           </li>
           <?php
           if ($is_boss === 1) {
-          ?>
+            ?>
             <li class="sidebar-header">
               <?php echo $translations["settings"]; ?>
             </li>
@@ -392,7 +443,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['userid'])) {
                 <span><?php echo $translations["rulepage"]; ?></span>
               </a>
             </li>
-          <?php
+            <?php
           }
           ?>
           <li class="sidebar-header">
@@ -422,19 +473,19 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['userid'])) {
           <li class="sidebar-header"><?php echo $translations["other-header"]; ?></li>
           <?php
           if ($is_boss === 1) {
-          ?>
+            ?>
             <li class="sidebar-item">
               <a class="sidebar-ling" href="../../updater">
                 <i class="bi bi-cloud-download"></i>
                 <span><?php echo $translations["updatepage"]; ?></span>
-                <?php if ($is_new_version_available) : ?>
+                <?php if ($is_new_version_available): ?>
                   <span class="sidebar-badge badge">
                     <i class="bi bi-exclamation-circle"></i>
                   </span>
                 <?php endif; ?>
               </a>
             </li>
-          <?php
+            <?php
           }
           ?>
           <li class="sidebar-item">
@@ -448,7 +499,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['userid'])) {
       <br>
       <div class="col-sm-10">
         <div class="d-none topnav d-sm-inline-block">
-          <a href="https://gymoneglobal.com/discord" class="btn btn-primary mx-1" target="_blank" rel="noopener noreferrer">
+          <a href="https://gymoneglobal.com/discord" class="btn btn-primary mx-1" target="_blank"
+            rel="noopener noreferrer">
             <i class="bi bi-question-circle"></i>
             <?php echo $translations["support"]; ?>
           </a>
@@ -479,13 +531,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['userid'])) {
                     <div class="mb-3">
                       <div class="form-group">
                         <label for="firstname"><?php echo $translations["firstname"]; ?></label>
-                        <input type="text" class="form-control" id="firstname" name="firstname" value="<?php echo $firstname; ?>" required>
+                        <input type="text" class="form-control" id="firstname" name="firstname"
+                          value="<?php echo $firstname; ?>" required>
                       </div>
                     </div>
                     <div class="mb-3">
                       <div class="form-group">
                         <label for="lastname"><?php echo $translations["lastname"]; ?></label>
-                        <input type="text" class="form-control" id="lastname" name="lastname" value="<?php echo $lastname; ?>" required>
+                        <input type="text" class="form-control" id="lastname" name="lastname"
+                          value="<?php echo $lastname; ?>" required>
                       </div>
                     </div>
                   </div>
@@ -494,14 +548,16 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['userid'])) {
                     <?php
                     $profilePicPath = '../../../assets/img/profiles/' . $useridgymuser . '.png';
                     if (file_exists($profilePicPath)): ?>
-                      <img src="<?php echo $profilePicPath; ?>" alt="User" class="img-rounded img-fluid" style="max-height: 150px; width: auto;">
+                      <img src="<?php echo $profilePicPath; ?>" alt="User" class="img-rounded img-fluid"
+                        style="max-height: 150px; width: auto;">
                     <?php endif; ?>
                   </div>
                 </div>
                 <div class="mb-3">
                   <div class="form-group">
                     <label for="email"><?php echo $translations["email"]; ?></label>
-                    <input type="email" class="form-control" id="email" name="email" value="<?php echo $email; ?>" required>
+                    <input type="email" class="form-control" id="email" name="email" value="<?php echo $email; ?>"
+                      required>
                   </div>
 
                 </div>
@@ -509,13 +565,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['userid'])) {
                   <?php echo $translations["save"]; ?></button>
                 <?php
                 if ($is_boss == 1) {
-                ?>
-                  <button type="button" class="btn btn-danger" data-toggle="modal" data-target="#deleteModal" data-userid="1">
+                  ?>
+                  <button type="button" class="btn btn-danger" data-toggle="modal" data-target="#deleteModal"
+                    data-userid="1">
                     <i class="bi bi-trash"></i>
                     <?php echo $translations["deleteuserbtn"]; ?>
                   </button> <?php
-                          }
-                            ?>
+                }
+                ?>
 
               </form>
             </div>
@@ -532,21 +589,24 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['userid'])) {
                 </div>
                 <div class="form-group">
                   <label for="lastLoginInput"><?php echo $translations["last-login"]; ?></label>
-                  <input type="text" class="form-control" id="lastLoginInput" value="<?php echo $lastlogin; ?>" disabled>
+                  <input type="text" class="form-control" id="lastLoginInput" value="<?php echo $lastlogin; ?>"
+                    disabled>
                 </div>
                 <div class="form-group">
                   <label for="Profile_balance"><?php echo $translations["profilebalance"]; ?></label>
-                  <input type="text" class="form-control" id="Profile_balance" value="<?php echo $balance; ?> <?php echo $currency; ?>" disabled>
+                  <input type="text" class="form-control" id="Profile_balance"
+                    value="<?php echo $balance; ?> <?php echo $currency; ?>" disabled>
                 </div>
                 <div class="form-group">
                   <label for="emailVerifiedInput"><?php echo $translations["regconfirm"]; ?></label>
                   <form method="post">
                     <div class="input-group">
-                      <input type="text" class="form-control text-danger" id="emailVerifiedInput" value="<?php echo ($verify == "Yes") ? $translations["yes"] : $translations["no"]; ?>" disabled>
+                      <input type="text" class="form-control text-danger" id="emailVerifiedInput"
+                        value="<?php echo ($verify == "Yes") ? $translations["yes"] : $translations["no"]; ?>" disabled>
                       <span class="input-group-btn">
                         <button class="btn btn-success" type="submit" <?php if ($verify == "Yes") {
-                                                                        echo "disabled";
-                                                                      } ?>>
+                          echo "disabled";
+                        } ?>>
                           <?php echo $translations["forceregconf"]; ?>
                         </button>
                         <input type="hidden" name="userid" value="<?php echo $useridgymuser; ?>">
@@ -565,29 +625,30 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['userid'])) {
         <div class="row">
           <div class="col-md-6">
             <div class="panel panel-default">
-              <div class="panel-heading text-center" style="background: rgb(9, 80, 220);
+              <div class="panel-heading text-center"
+                style="background: rgb(9, 80, 220);
     background: -moz-linear-gradient(90deg, rgba(9, 80, 220, 1) 0%, rgba(9, 88, 210, 1) 50%, rgba(9, 110, 210, 1) 100%);
     background: -webkit-linear-gradient(90deg, rgba(9, 80, 220, 1) 0%, rgba(9, 88, 210, 1) 50%, rgba(9, 110, 210, 1) 100%);
     background: linear-gradient(90deg, rgba(9, 80, 220, 1) 0%, rgba(9, 88, 210, 1) 50%, rgba(9, 110, 210, 1) 100%);
     filter: progid:DXImageTransform.Microsoft.gradient(startColorstr=' #0950dc', endColorstr='#096ed2' , GradientType=1); color: white;">
                 <div style="margin-bottom: 10px;">
                   <span class="label <?php
-                                      if (!isset($row) || $row === null) {
-                                        echo 'label-danger';
-                                      } else {
-                                        $expire = new DateTime($row['expiredate']);
-                                        $today = new DateTime(date('Y-m-d'));
-                                        $interval = $today->diff($expire)->format('%r%a');
+                  if (!isset($row) || $row === null) {
+                    echo 'label-danger';
+                  } else {
+                    $expire = new DateTime($row['expiredate']);
+                    $today = new DateTime(date('Y-m-d'));
+                    $interval = $today->diff($expire)->format('%r%a');
 
-                                        if ($interval < 0) {
-                                          echo 'label-danger';
-                                        } elseif ($interval == 0) {
-                                          echo 'label-warning';
-                                        } else {
-                                          echo 'label-success';
-                                        }
-                                      }
-                                      ?>" style="font-size: 14px; padding: 8px 15px;">
+                    if ($interval < 0) {
+                      echo 'label-danger';
+                    } elseif ($interval == 0) {
+                      echo 'label-warning';
+                    } else {
+                      echo 'label-success';
+                    }
+                  }
+                  ?>" style="font-size: 14px; padding: 8px 15px;">
                     <?php
                     if (!isset($row) || $row === null) {
                       echo '✗ ' . $translations["expired"];
@@ -617,12 +678,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['userid'])) {
                       <div class="panel-body">
                         <div class="media">
                           <div class="media-left">
-                            <div class="btn btn-success btn-circle" style="width: 40px; height: 40px; border-radius: 50%; padding: 8px;">
+                            <div class="btn btn-success btn-circle"
+                              style="width: 40px; height: 40px; border-radius: 50%; padding: 8px;">
                               📅
                             </div>
                           </div>
                           <div class="media-body">
-                            <small class="text-muted" style="text-transform: uppercase; font-weight: bold;"><?php echo $translations["buytime"]; ?></small>
+                            <small class="text-muted"
+                              style="text-transform: uppercase; font-weight: bold;"><?php echo $translations["buytime"]; ?></small>
                             <div style="font-weight: bold; font-size: 16px;"><?php echo $ticket_buydate; ?></div>
                           </div>
                         </div>
@@ -635,12 +698,14 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['userid'])) {
                       <div class="panel-body">
                         <div class="media">
                           <div class="media-left">
-                            <div class="btn btn-danger btn-circle" style="width: 40px; height: 40px; border-radius: 50%; padding: 8px;">
+                            <div class="btn btn-danger btn-circle"
+                              style="width: 40px; height: 40px; border-radius: 50%; padding: 8px;">
                               🎯
                             </div>
                           </div>
                           <div class="media-body">
-                            <small class="text-muted" style="text-transform: uppercase; font-weight: bold;"><?php echo $translations["ticketspassname"]; ?></small>
+                            <small class="text-muted"
+                              style="text-transform: uppercase; font-weight: bold;"><?php echo $translations["ticketspassname"]; ?></small>
                             <div style="font-weight: bold; font-size: 16px;"><?php echo $ticket_name; ?></div>
                           </div>
                         </div>
@@ -653,23 +718,26 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['userid'])) {
                       <div class="panel-body">
                         <div class="media" style="margin-bottom: 15px;">
                           <div class="media-left">
-                            <div class="btn btn-warning btn-circle" style="width: 40px; height: 40px; border-radius: 50%; padding: 8px;">
+                            <div class="btn btn-warning btn-circle"
+                              style="width: 40px; height: 40px; border-radius: 50%; padding: 8px;">
                               ⏰
                             </div>
                           </div>
                           <div class="media-body">
-                            <small class="text-muted" style="text-transform: uppercase; font-weight: bold;"><?php echo $translations["validity"]; ?></small>
+                            <small class="text-muted"
+                              style="text-transform: uppercase; font-weight: bold;"><?php echo $translations["validity"]; ?></small>
                             <div style="font-weight: bold; font-size: 16px;"><?php echo $translated_text; ?></div>
                           </div>
                         </div>
                         <div class="progress" style="margin-bottom: 10px;">
                           <div class="progress-bar <?php
-                                                    echo ($ticket_remaining_percent < 20)
-                                                      ? 'progress-bar-danger'
-                                                      : (($ticket_remaining_percent < 40)
-                                                        ? 'progress-bar-warning'
-                                                        : 'progress-bar-info');
-                                                    ?>" role="progressbar" style="width: <?php echo $ticket_remaining_percent; ?>%">
+                          echo ($ticket_remaining_percent < 20)
+                            ? 'progress-bar-danger'
+                            : (($ticket_remaining_percent < 40)
+                              ? 'progress-bar-warning'
+                              : 'progress-bar-info');
+                          ?>" role="progressbar"
+                            style="width: <?php echo $ticket_remaining_percent; ?>%">
                             <?php echo $ticket_remaining_percent; ?>%
                           </div>
 
@@ -683,15 +751,17 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['userid'])) {
                       <div class="panel-body">
                         <div class="media" style="margin-bottom: 15px;">
                           <div class="media-left">
-                            <div class="btn btn-info btn-circle" style="width: 40px; height: 40px; border-radius: 50%; padding: 8px;">
+                            <div class="btn btn-info btn-circle"
+                              style="width: 40px; height: 40px; border-radius: 50%; padding: 8px;">
                               💪
                             </div>
                           </div>
                           <div class="media-body">
-                            <small class="text-muted" style="text-transform: uppercase; font-weight: bold;"><?php echo $translations["tickettableoccassion"]; ?></small>
+                            <small class="text-muted"
+                              style="text-transform: uppercase; font-weight: bold;"><?php echo $translations["tickettableoccassion"]; ?></small>
                             <div style="font-weight: bold; font-size: 16px;"><?php
-                                                                              echo is_null($ticket_opportunities) ? $translations["unlimited"] : $ticket_opportunities . ' '. $translations["occassion_left"];
-                                                                              ?>
+                            echo is_null($ticket_opportunities) ? $translations["unlimited"] : $ticket_opportunities . ' ' . $translations["occassion_left"];
+                            ?>
                             </div>
                           </div>
                         </div>
@@ -708,15 +778,36 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['userid'])) {
   </div>
 
   <!-- EXIT MODAL -->
-  <div class="modal fade" id="logoutModal" tabindex="-1" role="dialog" aria-labelledby="logoutModalLabel" aria-hidden="true">
-    <div class="modal-dialog" role="document">
-      <div class="modal-content">
-        <div class="modal-body">
-          <p class="lead"><?php echo $translations["exit-modal"]; ?></p>
-        </div>
-        <div class="modal-footer">
-          <a type="button" class="btn btn-secondary" data-dismiss="modal"><?php echo $translations["not-yet"]; ?></a>
-          <a href="../../logout.php" type="button" class="btn btn-danger"><?php echo $translations["confirm"]; ?></a>
+  <div class="modal fade" id="logoutModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" style="margin-top: 100px;">
+      <div class="modal-content" style="border: none; box-shadow: 0 0 40px rgba(0,0,0,.2);">
+        <div class="modal-body text-center" style="padding: 40px;">
+
+          <div style="margin-bottom: 25px;">
+            <div style="width: 80px; height: 80px; margin: 0 auto;
+                                background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+                                border-radius: 50%;
+                                display: flex; align-items: center; justify-content: center;">
+              <i class="bi bi-box-arrow-right" style="color: #fff; font-size: 40px;"></i>
+            </div>
+          </div>
+
+          <h4 style="font-weight: bold; margin-bottom: 15px;">
+            <p><?php echo $translations["exit-modal"]; ?></p>
+          </h4>
+
+          <div class="text-center">
+            <a type="button" class="btn btn-default" data-dismiss="modal"
+              style="padding: 8px 25px; margin-right: 10px;">
+              <i class="bi bi-x-circle" style="margin-right: 5px;"></i>
+              <?php echo $translations["not-yet"]; ?>
+            </a>
+
+            <a href="../../logout.php" type="button" class="btn btn-danger" style="padding: 8px 25px;">
+              <i class="bi bi-check-circle" style="margin-right: 5px;"></i>
+              <?php echo $translations["confirm"]; ?>
+            </a>
+          </div>
         </div>
       </div>
     </div>
@@ -724,7 +815,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['userid'])) {
   <!-- DELETE USER MODAL -->
 
   <!-- Modal -->
-  <div class="modal fade" id="deleteModal" tabindex="-1" role="dialog" aria-labelledby="deleteModalLabel" aria-hidden="true">
+  <div class="modal fade" id="deleteModal" tabindex="-1" role="dialog" aria-labelledby="deleteModalLabel"
+    aria-hidden="true">
     <div class="modal-dialog" role="document">
       <div class="modal-content">
         <div class="modal-header">

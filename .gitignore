@@ -6,3 +6,5 @@ másolata.env
 /assets/img/profiles
 admin/shop/gateway/PAYPALCHECK.php
 \!\!\!SHOWCASE/index.php
+.env
+.log_FIX

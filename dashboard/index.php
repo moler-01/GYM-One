@@ -65,13 +65,13 @@ $result = $stmt->get_result();
 
 $id = $ticketname = $buydate = $expiredate = $opportunities = null;
 $currentDate = new DateTime();
-$currentDate = $currentDate->format('Y-m-d'); // Csak az év-hónap-nap kell
+$currentDate = $currentDate->format('Y-m-d');
 
 $validTicketFound = false;
 
 while ($row = $result->fetch_assoc()) {
     $expireDate = new DateTime($row['expiredate']);
-    $expireDate = $expireDate->format('Y-m-d'); // Csak az év-hónap-nap kell
+    $expireDate = $expireDate->format('Y-m-d');
 
     if ($expireDate >= $currentDate) {
         $id = $row['id'];
@@ -125,6 +125,59 @@ $stmt->bind_result($firstname, $lastname, $profile_balance);
 $stmt->fetch();
 
 $stmt->close();
+
+$dayNames = [
+    1 => $translations["Mon"],
+    2 => $translations["Tue"],
+    3 => $translations["Wed"],
+    4 => $translations["Thu"],
+    5 => $translations["Fri"],
+    6 => $translations["Sat"],
+    7 => $translations["Sun"]
+];
+
+$days = [];
+$result = $conn->query("SELECT * FROM opening_hours ORDER BY day ASC");
+while ($row = $result->fetch_assoc()) {
+    $days[] = $row;
+}
+
+$today = new DateTime('today');
+$maxDate = (new DateTime('today'))->modify('+14 days');
+
+$todayStr = $today->format('Y-m-d');
+$maxDateStr = $maxDate->format('Y-m-d');
+
+$exceptions = [];
+$stmt = $conn->prepare("
+    SELECT * 
+    FROM opening_hours_exceptions 
+    WHERE date BETWEEN ? AND ?
+    ORDER BY date ASC
+");
+$stmt->bind_param("ss", $todayStr, $maxDateStr);
+$stmt->execute();
+
+$res = $stmt->get_result();
+while ($row = $res->fetch_assoc()) {
+    $exceptions[] = $row;
+}
+$stmt->close();
+
+$months = [
+    1 => $translations["Jan"],
+    2 => $translations["Feb"],
+    3 => $translations["Mar"],
+    4 => $translations["Apr"],
+    5 => $translations["May"],
+    6 => $translations["Jun"],
+    7 => $translations["Jul"],
+    8 => $translations["Aug"],
+    9 => $translations["Sep"],
+    10 => $translations["Oct"],
+    11 => $translations["Nov"],
+    12 => $translations["Dec"],
+];
 
 
 
@@ -199,10 +252,14 @@ if (!file_exists($filename)) {
             </div>
             <div class="collapse navbar-collapse" id="myNavbar">
                 <ul class="nav navbar-nav">
-                    <li class="active"><a href=""><i class="bi bi-house"></i> <?php echo $translations["mainpage"]; ?></a></li>
-                    <li><a href="stats/"><i class="bi bi-graph-up"></i> <?php echo $translations["statspage"]; ?></a></li>
-                    <li><a href="profile/"><i class="bi bi-person-badge"></i> <?php echo $translations["profilepage"]; ?></a></li>
-                    <li><a href="invoices/"><i class="bi bi-receipt"></i> <?php echo $translations["invoicepage"]; ?></a></li>
+                    <li class="active"><a href=""><i class="bi bi-house"></i>
+                            <?php echo $translations["mainpage"]; ?></a></li>
+                    <li><a href="stats/"><i class="bi bi-graph-up"></i> <?php echo $translations["statspage"]; ?></a>
+                    </li>
+                    <li><a href="profile/"><i class="bi bi-person-badge"></i>
+                            <?php echo $translations["profilepage"]; ?></a></li>
+                    <li><a href="invoices/"><i class="bi bi-receipt"></i>
+                            <?php echo $translations["invoicepage"]; ?></a></li>
                 </ul>
             </div>
         </div>
@@ -270,7 +327,8 @@ if (!file_exists($filename)) {
                         <div class="card">
                             <div class="card-body">
                                 <h4 class="card-title fw-semibold"><?php echo $translations["remainingdays"]; ?></h4>
-                                <h1><strong><?php echo $daysRemaining; ?> </strong><?php echo $translations["day"]; ?></h1>
+                                <h1><strong><?php echo $daysRemaining; ?> </strong><?php echo $translations["day"]; ?>
+                                </h1>
                             </div>
                         </div>
                     </div>
@@ -302,23 +360,106 @@ if (!file_exists($filename)) {
                             </div>
                         </div>
                     </div>
+                    <div class="col-md-3">
+                        <?php if (!empty($days)): ?>
+                            <div class="panel panel-default">
+                                <div class="panel-heading">
+                                    <h4 class="panel-title"><?= $translations["opening_hours"] ?? "Nyitvatartás"; ?></h4>
+                                </div>
+                                <div class="list-group" style="margin-bottom: 0;">
+                                    <?php foreach ($days as $day): ?>
+                                        <div class="list-group-item">
+                                            <div class="clearfix">
+                                                <strong
+                                                    class="pull-left"><?= htmlspecialchars($dayNames[$day['day']]) ?></strong>
+                                                <span class="pull-right">
+                                                    <?php if (is_null($day['open_time']) && is_null($day['close_time'])): ?>
+                                                        <span class="label label-danger"><?= $translations["closed"]; ?></span>
+                                                    <?php else: ?>
+                                                        <span class="label label-success">
+                                                            <?= date('H:i', strtotime($day['open_time'])) ?> -
+                                                            <?= date('H:i', strtotime($day['close_time'])) ?>
+                                                        </span>
+                                                    <?php endif; ?>
+                                                </span>
+                                            </div>
+                                        </div>
+                                    <?php endforeach; ?>
+
+                                    <?php if (!empty($exceptions)): ?>
+                                        <div class="list-group-item" style="background-color: #f5f5f5; padding: 8px 15px;">
+                                            <small class="text-muted">
+                                                <strong><?= $translations["special-opentime"]; ?></strong>
+                                            </small>
+                                        </div>
+
+                                        <?php foreach ($exceptions as $ex): ?>
+                                            <?php
+                                            $date = new DateTime($ex['date']);
+                                            $monthName = $months[(int) $date->format('n')];
+                                            $day = $date->format('j');
+                                            ?>
+                                            <div class="list-group-item"
+                                                style="background-color: #fcf8e3; border-left: 3px solid #f0ad4e;">
+                                                <div class="clearfix">
+                                                    <span class="pull-left">
+                                                        <span class="glyphicon glyphicon-calendar"
+                                                            style="color: #f0ad4e; margin-right: 5px;"></span>
+                                                        <strong><?= $monthName . ' ' . $day . '.' ?></strong>
+                                                    </span>
+                                                    <span class="pull-right">
+                                                        <?php if ($ex['is_closed']): ?>
+                                                            <span class="label label-danger"><?= $translations["closed"]; ?></span>
+                                                        <?php else: ?>
+                                                            <span class="label label-warning">
+                                                                <?= date('H:i', strtotime($ex['open_time'])) ?> -
+                                                                <?= date('H:i', strtotime($ex['close_time'])) ?>
+                                                            </span>
+                                                        <?php endif; ?>
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        <?php endforeach; ?>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                        <?php endif; ?>
+                    </div>
                 </div>
             </div>
         </div>
 
         <!-- EXIT MODAL -->
-        <div class="modal fade" id="logoutModal" tabindex="-1" role="dialog" aria-labelledby="logoutModalLabel">
-            aria-hidden="true">
-            <div class="modal-dialog" role="document">
-                <div class="modal-content">
-                    <div class="modal-body">
-                        <p class="lead"><?php echo $translations["exit-modal"]; ?></p>
-                    </div>
-                    <div class="modal-footer">
-                        <a type="button" class="btn btn-secondary"
-                            data-dismiss="modal"><?php echo $translations["not-yet"]; ?></a>
-                        <a href="logout.php" type="button"
-                            class="btn btn-danger"><?php echo $translations["confirm"]; ?></a>
+        <div class="modal fade" id="logoutModal" tabindex="-1" role="dialog">
+            <div class="modal-dialog" style="margin-top: 100px;">
+                <div class="modal-content" style="border: none; box-shadow: 0 0 40px rgba(0,0,0,.2);">
+                    <div class="modal-body text-center" style="padding: 40px;">
+
+                        <div style="margin-bottom: 25px;">
+                            <div style="width: 80px; height: 80px; margin: 0 auto;
+                                background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+                                border-radius: 50%;
+                                display: flex; align-items: center; justify-content: center;">
+                                <i class="bi bi-box-arrow-right" style="color: #fff; font-size: 40px;"></i>
+                            </div>
+                        </div>
+
+                        <h4 style="font-weight: bold; margin-bottom: 15px;">
+                            <p><?php echo $translations["exit-modal"]; ?></p>
+                        </h4>
+
+                        <div class="text-center">
+                            <a type="button" class="btn btn-default" data-dismiss="modal"
+                                style="padding: 8px 25px; margin-right: 10px;">
+                                <i class="bi bi-x-circle" style="margin-right: 5px;"></i>
+                                <?php echo $translations["not-yet"]; ?>
+                            </a>
+
+                            <a href="logout.php" type="button" class="btn btn-danger" style="padding: 8px 25px;">
+                                <i class="bi bi-check-circle" style="margin-right: 5px;"></i>
+                                <?php echo $translations["confirm"]; ?>
+                            </a>
+                        </div>
                     </div>
                 </div>
             </div>
