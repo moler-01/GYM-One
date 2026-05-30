@@ -1,4 +1,4 @@
-Dockerfile
+
 FROM php:8.2-apache
 
 # Instalar dependencias esenciales del sistema para GYM One
