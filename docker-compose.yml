@@ -1,14 +1,15 @@
-
 services:
   gymone-web:
     build: .
     restart: always
-    # Dokploy inyectará el código clonado directamente aquí
+    ports:
+     
+      - "100.87.51.69:8080:80" 
     volumes:
       - .:/var/www/html 
     networks:
       - gymone-internal
-      - dokploy-network # Red obligatoria para que el proxy Traefik de Dokploy lo detecte
+      - dokploy-network
 
   gymone-db:
     image: mariadb:10.11
@@ -19,7 +20,6 @@ services:
       - MYSQL_USER=gymone_admin
       - MYSQL_PASSWORD=cambia_este_password_seguro
     volumes:
-      # Usamos el directorio sugerido por Dokploy para persistencia local robusta
       - ../files/gymone_db:/var/lib/mysql
     networks:
       - gymone-internal
@@ -28,4 +28,4 @@ networks:
   gymone-internal:
     driver: bridge
   dokploy-network:
-    external: true # Le dice a Docker que use la red nativa de Dokploy
+    external: true
