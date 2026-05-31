@@ -1,49 +1,75 @@
-<?php function read_env_file($file_path)
+<?php 
+// --- 1. FUNCIÓN MEJORADA PARA DOCKER/DOKPLOY ---
+function read_env_file($file_path)
 {
+    // Evitar advertencias si el archivo no existe físicamente
+    if (!file_exists($file_path)) {
+        return [];
+    }
+
     $env_file = file_get_contents($file_path);
     $env_lines = explode("\n", $env_file);
     $env_data = [];
 
     foreach ($env_lines as $line) {
-        $line_parts = explode('=', $line);
+        // Limitar a 2 partes por si la contraseña contiene el símbolo '='
+        $line_parts = explode('=', $line, 2);
         if (count($line_parts) == 2) {
             $key = trim($line_parts[0]);
-            $value = trim($line_parts[1]);
+            // Eliminar comillas dobles o simples si existen en el valor
+            $value = trim(trim($line_parts[1]), '"\'');
             $env_data[$key] = $value;
         }
     }
 
     return $env_data;
 }
+
+// --- 2. FUNCIÓN PUENTE PARA LEER VARIABLES ---
+function get_config($key, $env_data, $default = '') {
+    $sys_env = getenv($key); // Priorizar la memoria del contenedor (Dokploy)
+    if ($sys_env !== false && $sys_env !== '') {
+        return $sys_env;
+    }
+    return $env_data[$key] ?? $default; // Fallback al archivo .env o al valor por defecto
+}
+
 $copyright_year = date("Y");
 
 $env_data = read_env_file('.env');
 
-$db_host = $env_data['DB_SERVER'] ?? '';
-$db_username = $env_data['DB_USERNAME'] ?? '';
-$db_password = $env_data['DB_PASSWORD'] ?? '';
-$db_name = $env_data['DB_NAME'] ?? '';
-$country = $env_data['COUNTRY'] ?? '';
-$street = $env_data['STREET'] ?? '';
-$city = $env_data['CITY'] ?? '';
-$hause_no = $env_data['HOUSE_NUMBER'] ?? '';
-$description = $env_data['DESCRIPTION'] ?? '';
-$metakey = $env_data['META_KEY'] ?? '';
-$gkey = $env_data['GOOGLE_KEY'] ?? '';
-$capacity = $env_data['CAPACITY'] ?? '';
-$about_us = $env_data['ABOUT'] ?? '';
+// --- 3. MAPEO DE VARIABLES CON SOPORTE PARA NOMBRES CLÁSICOS Y MODERNOS ---
+$db_host = get_config('DB_SERVER', $env_data) ?: get_config('DB_HOST', $env_data);
+$db_username = get_config('DB_USERNAME', $env_data) ?: get_config('DB_USER', $env_data);
+$db_password = get_config('DB_PASSWORD', $env_data) ?: get_config('DB_PASS', $env_data);
+$db_name = get_config('DB_NAME', $env_data);
 
-$business_name = $env_data['BUSINESS_NAME'] ?? '';
-$lang_code = $env_data['LANG_CODE'] ?? '';
+$country = get_config('COUNTRY', $env_data);
+$street = get_config('STREET', $env_data);
+$city = get_config('CITY', $env_data);
+$hause_no = get_config('HOUSE_NUMBER', $env_data);
+$description = get_config('DESCRIPTION', $env_data);
+$metakey = get_config('META_KEY', $env_data);
+$gkey = get_config('GOOGLE_KEY', $env_data);
+$capacity = get_config('CAPACITY', $env_data, '0');
+$about_us = get_config('ABOUT', $env_data);
+
+$business_name = get_config('BUSINESS_NAME', $env_data) ?: get_config('APP_NAME', $env_data, 'Gym Manager');
+// Prevenir el error húngaro forzando 'es' por defecto
+$lang_code = get_config('LANG_CODE', $env_data) ?: get_config('APP_LANG', $env_data, 'es'); 
 
 $lang = $lang_code;
 
 $langDir = __DIR__ . "/assets/lang/";
-
 $langFile = $langDir . "$lang.json";
 
+// --- 4. SISTEMA DE RESPALDO DE IDIOMA ---
 if (!file_exists($langFile)) {
-    die("A nyelvi fájl nem található: $langFile");
+    // Si no existe el idioma, intentamos cargar inglés antes de matar la aplicación
+    $langFile = $langDir . "en.json";
+    if (!file_exists($langFile)) {
+        die("A nyelvi fájl nem található: $langFile");
+    }
 }
 
 $translations = json_decode(file_get_contents($langFile), true);
@@ -78,8 +104,7 @@ $maxDateStr = $maxDate->format('Y-m-d');
 
 $exceptions = [];
 $stmt = $conn->prepare("
-    SELECT * 
-    FROM opening_hours_exceptions 
+    SELECT * FROM opening_hours_exceptions 
     WHERE date BETWEEN ? AND ?
     ORDER BY date ASC
 ");
@@ -149,9 +174,7 @@ if ($capacityPercent >= 0 && $capacityPercent < 70) {
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
         integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <!-- CUSTOM STYLE INSERT HERE! -->
     <link rel="stylesheet" href="assets/css/default.css">
-    <!-- CUSTOM STYLE INSERT HERE! -->
     <link rel="shortcut icon" href="assets/img/brand/favicon.png" type="image/x-icon">
     <meta name="title" content="<?php echo $business_name; ?> - <?php echo $translations["mainpage"]; ?>">
     <meta name="description" content="<?php echo $description; ?>">
@@ -161,7 +184,6 @@ if ($capacityPercent >= 0 && $capacityPercent < 70) {
     <meta name="author" content="<?php echo $business_name; ?>">
 
 </head>
-<!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=<?php echo $gkey; ?>"></script>
 <script>
     window.dataLayer = window.dataLayer || [];
